@@ -1,0 +1,106 @@
+---
+// Illustration of the in-house config platform's resolution model: each key holds an
+// ordered list of app-version rules and the first rule that matches wins.
+const RULES = [
+  { op: '=', v: '33.5', value: '"off"', note: 'a build with a known bug' },
+  { op: '>=', v: '34.0', value: '"v2"', note: 'new home screen' },
+  { op: '>=', v: '33.0', value: '"v1"', note: '' },
+];
+---
+<div class="cfg" data-cfg data-rules={JSON.stringify(RULES)}>
+  <div class="head">
+    <b>Config panel</b>
+    <span>Illustration</span>
+  </div>
+  <div class="key">
+    <code>home_screen_variant</code>
+    <span class="plat">Android</span>
+  </div>
+  <ol class="rules">
+    {RULES.map((r, i) => (
+      <li data-rule={i}>
+        <span class="cond">app version {r.op} {r.v}</span>
+        <span class="arrow" aria-hidden="true">→</span>
+        <code>{r.value}</code>
+        {r.note && <span class="note">{r.note}</span>}
+      </li>
+    ))}
+    <li data-rule="none" class="fallback"><span class="cond">no rule matches</span><span class="arrow" aria-hidden="true">→</span><code>app default</code></li>
+  </ol>
+
+  <label class="ver">
+    <span>Try an app version: <b class="num" data-ver>34.2</b></span>
+    <input type="range" min="32.5" max="35" step="0.1" value="34.2" data-slider />
+  </label>
+
+  <div class="out" aria-live="polite">
+    <p>The app gets <code data-val>"v2"</code></p>
+    <button type="button" data-fetch>Fetch config</button>
+  </div>
+  <ol class="log" data-log aria-label="Request log"></ol>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-cfg]').forEach((el) => {
+    const R = JSON.parse(el.dataset.rules);
+    const slider = el.querySelector('[data-slider]');
+    const log = el.querySelector('[data-log]');
+    let lastTag = null;
+    const cmp = (a, op, b) => (op === '=' ? a === b : a >= b - 1e-9);
+    function resolve() {
+      const v = +(+slider.value).toFixed(1);
+      el.querySelector('[data-ver]').textContent = v.toFixed(1);
+      const i = R.findIndex((r) => cmp(v, r.op, +r.v));
+      el.querySelectorAll('[data-rule]').forEach((li) => li.classList.toggle('hit', li.dataset.rule === String(i === -1 ? 'none' : i)));
+      el.querySelector('[data-val]').textContent = i === -1 ? 'its built-in default' : R[i].value;
+      return v;
+    }
+    function fetchCfg() {
+      const v = resolve();
+      const tag = 'android:' + v.toFixed(1) + ':r42';
+      const li = document.createElement('li');
+      const same = tag === lastTag;
+      li.innerHTML = `<code>GET /config  v${v.toFixed(1)}</code><span class="${same ? 'c304' : 'c200'}">${same ? '304 Not Modified' : '200 from Redis'}</span>`;
+      log.prepend(li);
+      while (log.children.length > 3) log.lastChild.remove();
+      lastTag = tag;
+    }
+    slider.addEventListener('input', resolve);
+    el.querySelector('[data-fetch]').addEventListener('click', fetchCfg);
+    resolve();
+  });
+</script>
+
+<style>
+  .cfg {
+    background: #f6f7fb; color: #1b1f3d; border-radius: var(--radius-lg); padding: 22px;
+    display: grid; gap: 16px; font-size: 0.88rem;
+    box-shadow: 0 30px 80px -30px rgb(140 151 255 / 0.45);
+  }
+  .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .head b { font: 600 1rem var(--display); }
+  .head span { font-size: 0.7rem; color: #6b7099; }
+  .key { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #fff; border-radius: 12px; }
+  code { font: 0.8rem ui-monospace, Menlo, Consolas, monospace; }
+  .plat { font-size: 0.72rem; font-weight: 700; background: #e3e6fb; border-radius: 999px; padding: 2px 10px; }
+  .rules { margin: 0; padding: 0 0 0 1.4em; display: grid; gap: 6px; }
+  .rules li { padding: 8px 12px; border-radius: 10px; border: 1.5px solid transparent; background: #fff; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; transition: border-color 0.25s, background-color 0.25s; }
+  .rules li::marker { font-weight: 700; color: #6b7099; }
+  .rules li.fallback { list-style: none; margin-left: -1.4em; }
+  .rules li.hit { border-color: #3442c9; background: #eef0ff; }
+  .rules li.hit code { color: #3442c9; font-weight: 700; }
+  .arrow { color: #9aa0c8; }
+  .note { flex-basis: 100%; font-size: 0.72rem; color: #6b7099; }
+  .ver { display: grid; gap: 6px; font-weight: 600; }
+  .ver input { width: 100%; accent-color: #3442c9; }
+  .out { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .out p { font-weight: 650; }
+  .out button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; background: #1b1f3d; color: #fff; }
+  .out button:hover { background: #3442c9; }
+  .out button:focus-visible { outline: 2px solid #3442c9; outline-offset: 2px; }
+  .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-height: 4.6rem; }
+  .log :global(li) { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; background: #1b1f3d; color: #ecebfa; border-radius: 8px; font-size: 0.76rem; animation: in 0.3s ease; }
+  .log :global(.c200) { color: #6fd3c5; font-weight: 700; }
+  .log :global(.c304) { color: #f2b544; font-weight: 700; }
+  @keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+</style>

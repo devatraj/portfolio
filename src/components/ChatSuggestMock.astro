@@ -1,0 +1,90 @@
+---
+// Illustration of AI first-message suggestions at the moment of sending an interest.
+// Sample profile details and messages; no real people.
+const SETS = [
+  [
+    'You trek too! Which trail would you do again in a heartbeat?',
+    'Your profile says you play the guitar. What are you learning right now?',
+    'We both like slow Sunday mornings. Chai or coffee?',
+  ],
+  [
+    'A fellow trekker who also reads before bed. What are you reading?',
+    'Guitar and trekking is a great mix. Ever played at a campsite?',
+    'Your family sounds close-knit like mine. What do Sundays look like for you?',
+  ],
+];
+---
+<div class="cs" data-cs data-sets={JSON.stringify(SETS)}>
+  <div class="phone">
+    <div class="screen">
+      <div class="profile">
+        <span class="pic" aria-hidden="true"></span>
+        <div>
+          <p class="who">28, Software engineer</p>
+          <p class="likes">Trekking · Guitar · Reading</p>
+        </div>
+      </div>
+      <p class="h">Suggested by AI <span class="pill">Pick one</span></p>
+      <div class="chips" data-chips role="group" aria-label="Suggested first messages">
+        {SETS[0].map((m) => <button type="button">{m}</button>)}
+      </div>
+      <button type="button" class="more" data-more>More suggestions</button>
+      <textarea rows="3" data-msg aria-label="Your message" placeholder="Write a message, or pick a suggestion"></textarea>
+      <button type="button" class="send" data-send>Send interest</button>
+      <p class="sent" aria-live="polite" data-sent></p>
+    </div>
+  </div>
+  <p class="cap">Illustration with a sample profile</p>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-cs]').forEach((el) => {
+    const S = JSON.parse(el.dataset.sets);
+    const chips = el.querySelector('[data-chips]'), msg = el.querySelector('[data-msg]'), sent = el.querySelector('[data-sent]');
+    let k = 0;
+    function bind() {
+      chips.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+        chips.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+        msg.value = b.textContent;
+        sent.textContent = '';
+      }));
+    }
+    bind();
+    el.querySelector('[data-more]').addEventListener('click', () => {
+      k = (k + 1) % S.length;
+      chips.innerHTML = '';
+      S[k].forEach((m) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = m; chips.appendChild(b); });
+      bind();
+    });
+    el.querySelector('[data-send]').addEventListener('click', () => {
+      sent.textContent = msg.value.trim() ? 'Interest sent with a message ✓' : 'Interest sent. Adding a message gets more replies.';
+    });
+  });
+</script>
+
+<style>
+  .cs { display: grid; gap: 10px; justify-items: center; }
+  .phone { width: min(100%, 320px); padding: 12px; border-radius: 42px; background: #3a1d33; box-shadow: 0 30px 80px -30px rgb(240 123 184 / 0.45); }
+  .screen { background: #fff8f4; color: #2a1622; border-radius: 32px; padding: 22px 16px 18px; display: grid; gap: 12px; font-size: 0.82rem; }
+  .profile { display: flex; gap: 12px; align-items: center; }
+  .pic { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #f7b2c4, #c86b9a); flex: none; }
+  .who { font-weight: 700; }
+  .likes { color: #8a5a72; font-size: 0.76rem; }
+  .h { font-weight: 700; font-size: 0.76rem; color: #a83f6f; display: flex; justify-content: space-between; }
+  .pill { font-weight: 600; color: #8a5a72; }
+  .chips { display: grid; gap: 6px; }
+  .chips :global(button) {
+    font: inherit; text-align: left; cursor: pointer; padding: 9px 12px; border-radius: 14px;
+    border: 1.5px solid #f1cddd; background: #fff; color: inherit; line-height: 1.35;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .chips :global(button:hover) { border-color: #c8467f; }
+  .chips :global(button.on) { border-color: #c8467f; background: #fdeaf2; }
+  .more { justify-self: start; font: inherit; font-size: 0.76rem; font-weight: 700; color: #a83f6f; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  textarea { font: inherit; border: 1.5px solid #f1cddd; border-radius: 12px; padding: 9px 12px; resize: none; background: #fff; color: inherit; }
+  .send { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 10px; cursor: pointer; background: #c8467f; color: #fff; }
+  .send:hover { background: #a83f6f; }
+  .chips :global(button:focus-visible), .more:focus-visible, .send:focus-visible, textarea:focus-visible { outline: 2px solid #c8467f; outline-offset: 2px; }
+  .sent { min-height: 1.3em; font-weight: 650; color: #2d7a52; font-size: 0.78rem; text-align: center; }
+  .cap { font-size: 0.72rem; color: var(--dim); }
+</style>

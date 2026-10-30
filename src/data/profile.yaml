@@ -1,0 +1,484 @@
+# Single source of truth for the portfolio.
+# RULE: every sentence on the site must trace back to a fact in this file.
+# Views (lenses) may reword facts; they may never add new ones.
+# Lines marked  # CONFIRM  need Devatraj's sign-off before launch.
+
+person:
+  name: Devatraj Bhattacharjee
+  headline: Backend & AI Software Engineer
+  location: Noida, India
+  relocation: Bangalore
+  email: devatrajb@gmail.com
+  photo: null                      # set to /photo.jpg once the photo is in public/
+  phone: null                      # CONFIRM: keep phone OFF the public site (spam risk)
+  links:
+    linkedin: https://linkedin.com/in/devatraj
+    github: https://github.com/devatraj
+    leetcode: https://leetcode.com/u/numbnerd
+  availability: null               # CONFIRM: show "open to opportunities" publicly, or keep silent?
+
+education:
+  degree: B.Tech, Computer Science and Engineering
+  school: National Institute of Technology Patna
+  years: 2021 – 2025
+  cgpa: 8.73 / 10
+  oneliner: Computer science at an Institute of National Importance, with competitive programming, community leadership and an ML research project alongside.
+  highlights:
+    - ["8.73", "CGPA out of 10"]
+    - ["1851", "peak LeetCode rating, Knight badge, top 5%"]
+    - ["1,200+", "problems solved across LeetCode and CodeChef (3-star)"]
+    - ["200+", "student developers in the Google Developer Student Club, as its President"]
+    - ["92%", "accuracy on a deep learning model for cancer-linked DNA methylation"]
+
+# ---------------------------------------------------------------------------
+# Facts. Each has an id so lenses and the chat can cite it.
+# ---------------------------------------------------------------------------
+facts:
+  # --- Info Edge: Jeevansathi (full-time, 07/2025 – present) -------------
+  - id: firebase-replacement
+    title: "Firebase Remote Config, replaced"
+    kind: [cost, backend]
+    org: jeevansathi
+    text: Built an in-house feature-configuration platform (Spring Boot, Redis, MongoDB) that replaced Firebase Remote Config after it moved to a paid tier.
+    plain: "Replaced a configuration service that turned paid with an in-house one. Saves $70,000 a year at 10M+ requests a day."   # wording for non-technical readers
+    metrics: ["$70,000/year licensing cost eliminated", "10M+ requests/day"]
+    tags: [java, spring-boot, redis, mongodb, kubernetes, react, cost-saving]
+
+  - id: genai-matchmaking
+    title: "Real-time GenAI matchmaking"
+    kind: [ai, backend]
+    org: jeevansathi
+    text: Delivered a real-time GenAI matchmaking engine using Spring Boot, Openfire (XMPP) and Aerospike, orchestrating GPT, Gemini and Qwen through a LangChain/LlamaIndex RAG pipeline on RedisVL vector search.
+    metrics: ["99.9% uptime"]
+    tags: [llm, rag, langchain, llamaindex, redisvl, xmpp, aerospike]
+
+  - id: semantic-cache
+    title: "Semantic cache for LLM calls"
+    kind: [ai, cost]
+    org: jeevansathi
+    text: Implemented Redis semantic caching to avoid duplicate LLM calls.
+    metrics: ["85% cache hit ratio", "40% lower message latency"]
+    tags: [llm-optimisation, redis, caching, cost-saving]
+
+  - id: kafka-matching
+    title: "Event-driven matching on Kafka"
+    kind: [backend]
+    org: jeevansathi
+    text: Designed a fault-tolerant, event-driven matching algorithm on Kafka and NoSQL stores.
+    metrics: ["500,000+ users connected"]
+    tags: [kafka, event-driven, nosql]
+
+  - id: structured-outputs
+    title: "LLM-regenerated listings"
+    kind: [ai]
+    org: jeevansathi
+    text: Led LLM integration across a Kubernetes-deployed React/Redux and Spring Boot stack, using Structured Outputs (JSON Schema) to regenerate listing data.
+    metrics: ["35% increase in conversion"]   # shown ONCE on the site
+    tags: [llm, structured-outputs, react, spring-boot]
+
+  - id: conversion-pipelines
+    title: "Marketing conversion pipelines"
+    kind: [backend]
+    org: jeevansathi
+    text: Built containerized pipelines sending conversion events to Meta and Google APIs, with MongoDB aggregations and cron batches automating daily marketing feeds.
+    metrics: ["10,000+ listings/day"]
+    tags: [data-pipelines, mongodb, marketing-tech]
+
+  - id: microservices-footprint
+    title: "42 production microservices"
+    kind: [backend]
+    org: jeevansathi
+    text: Shipped changes across 42 production microservices.
+    metrics: ["596 commits, Dec 2025 – Oct 2026"]
+    source: git history across ServiceRepo
+    tags: [breadth]
+
+  # --- milanSathi ---------------------------------------------------------
+  - id: milansathi
+    title: "milanSathi"
+    kind: [cost, ai]
+    org: jeevansathi
+    credit: Built
+    text: Built milanSathi, an in-house AI-powered astrology engine (kundli + kundli-milan) that replaced a paid third-party astrology API.
+    plain: "Replaced a paid astrology API with milanSathi, an in-house AI-powered astrology engine. Same answers, about $45,000 a year cheaper."   # wording for non-technical readers
+    metrics: ["~$45,000/year saved", "100% parity with the vendor on everything tested"]
+    tags: [python, fastapi, llm, cost-saving, validation, ai-product]
+
+  - id: milansathi-parity
+    title: "milanSathi: proof before switching"
+    kind: [cost]
+    org: jeevansathi
+    text: Proved correctness against the vendor before switching traffic.
+    metrics: ["284/284 Ashtakoota combinations + 55 real pairs", "729/729 Dashakoota cells", "81/81 planet positions", "Vimshottari dasha matched to the minute"]
+    tags: [validation, testing]
+
+  - id: milansathi-vendor-bug
+    title: "milanSathi: the vendor bug"
+    kind: [cost]
+    org: jeevansathi
+    text: Found a scoring bug in the vendor's Yoni table. The engine is classically correct by default and can reproduce the vendor's behaviour behind a switch.
+    tags: [correctness]
+
+  - id: milansathi-honesty
+    title: "milanSathi: honest answers"
+    kind: [ai]
+    org: jeevansathi
+    text: Labelled every result Type-1 (provable astronomy), Type-2 (classical standard) or Type-3 (varies by tradition), so users know which values are facts and which are conventions.
+    tags: [trust, product-thinking]
+
+  - id: milansathi-ai
+    title: "milanSathi: AI layer"
+    kind: [ai]
+    org: jeevansathi
+    text: "Shipped four grounded LLM features on the engine: a personality reading, a couple's compatibility story, chart-based icebreakers and an AI astrologer chat, all with graceful fallback."
+    plain: "Added four AI features on top: a personal reading, a couple's story, conversation starters and a chat that answers from the user's own chart."   # wording for non-technical readers
+    tags: [llm, grounding, ai-product]
+
+  - id: milansathi-rollout
+    title: "milanSathi: rollout"
+    kind: [backend]
+    org: jeevansathi
+    text: Rolled it into the main profile service behind an experiment flag, with no change for existing callers and an automatic fallback to the vendor on failure.
+    metrics: ["thread-safety proven on 20k concurrent calls"]
+    tags: [java, spring-boot, feign, experimentation, reliability]
+
+  - id: sutra
+    title: "Sutra (team project)"
+    kind: [tools, ai]
+    org: jeevansathi
+    credit: Contributed
+    text: Contributed to Sutra, the team's internal AI engineering assistant. I built its live-production Debug/RCA tool (reads prod logs and cross-service traces, leads with evidence, never a verdict), one-command setup, conversational follow-ups and a plan-approval gate in its agent engine.
+    plain: "Helped build an internal AI assistant that answers engineers' questions about the codebase. My part: a tool that investigates live production issues and explains the likely cause with evidence."
+    tags: [agents, claude, observability, internal-tools]
+
+  - id: config-api-design
+    title: "Config API design"
+    kind: [backend]
+    org: jeevansathi
+    text: "Designed the config platform so the app is never slower than Firebase: each value is an ordered list of version rules where the first match wins, responses are cached in Redis per platform and app version, and unchanged configs return 304 via ETags. Edits go live without a deploy, and the app falls back to its defaults if the API is down."
+    metrics: ["ETag + Redis caching", "edit without a deploy"]
+    tags: [java, spring-boot, redis, mysql, caching, api-design]
+
+  - id: chat-suggestions
+    title: "AI first messages"
+    kind: [ai]
+    org: jeevansathi
+    text: Built AI first-message suggestions. When someone sends an interest, an async Kafka worker reads both profiles and asks Qwen (on Vertex AI) for personalised openers, so the sender can pick one instead of sending a blank interest.
+    plain: "Most people sent interests with no message, and those get fewer replies. Now AI suggests a personal first message from both profiles, ready to send in one tap."
+    metrics: ["A/B tested on 50% of users"]
+    tags: [llm, qwen, vertex-ai, kafka, redis, mongodb, ab-testing]
+
+  # --- Info Edge: 99acres (intern, 01/2025 – 06/2025) --------------------
+  - id: otp-auth
+    title: "OTP authentication"
+    kind: [backend]
+    org: 99acres
+    text: Revamped OTP authentication with Spring Security and JWT, tuned MySQL (InnoDB) queries and added Prometheus anomaly detection.
+    metrics: ["5,000+ daily logins"]
+    tags: [security, spring-boot, mysql, observability]
+
+  - id: api-aggregator
+    title: "API aggregator"
+    kind: [backend]
+    org: 99acres
+    text: Standardised cross-service calls through a containerized Spring Boot API aggregator with unified headers.
+    metrics: ["15% lower API latency"]
+    tags: [spring-boot, microservices]
+
+  - id: rabbitmq-refactor
+    title: "Event-driven approvals"
+    kind: [backend]
+    org: 99acres
+    text: Moved the profile approval workflow to an event-driven design on RabbitMQ with a central listener factory.
+    metrics: ["30% less duplicated code"]
+    tags: [rabbitmq, event-driven, design-patterns]
+
+  - id: landing-page
+    title: "Marketing landing page"
+    kind: [frontend]
+    org: 99acres
+    text: Built a marketing landing page.
+    metrics: ["33% increase in CTA conversion"]
+    tags: [frontend, marketing, conversion]
+
+  # --- Personal projects (can be shown in full) ---------------------------
+  - id: ai-code-reviewer
+    title: "AI Code Reviewer (MCP)"
+    kind: [tools, ai]
+    org: personal
+    text: Built an installable MCP server that reviews code diffs against a repository's own conventions, using RAG (AST chunking, on-device FastEmbed embeddings, Chroma) and a LangGraph review agent.
+    plain: "An AI reviewer that checks new code against how your team already writes code, and cites the exact files it learned from."   # wording for non-technical readers
+    metrics: ["100% citation accuracy (5/5)", "0 false positives across a 6-case eval suite"]
+    tags: [mcp, rag, langgraph, agents, evals]
+
+  - id: resume-tailor
+    title: "resume-tailor"
+    kind: [tools]
+    org: personal
+    text: Built a tool that tailors a LaTeX resume to a job description by reordering skills only. It can never add a skill that isn't true, and it reports gaps honestly.
+    plain: "A tool that fits a resume to any job post in one tap, and refuses to add a skill you don't have."   # wording for non-technical readers
+    metrics: ["73% coverage on a backend SDE JD", "89% on an AI Engineer JD"]
+    tags: [fastapi, cloud-run, tooling, honesty-by-design]
+
+  - id: layout-optimizer
+    title: "AI-driven layout optimizer"
+    kind: [ai]
+    org: personal
+    text: Prototyped a telemetry-driven service that re-ranks UI components per session from clickstream signals using an LLM-scored layout policy.
+    metrics: ["20% better than static layouts in A/B evaluation"]
+    tags: [spring-boot, python, react, llm]
+
+  - id: dna-methylation
+    title: "DNA methylation model"
+    kind: [ai]
+    org: personal
+    text: Trained a deep learning model (TensorFlow, PyTorch) to predict DNA methylation sites for cancer diagnosis.
+    metrics: ["92% accuracy"]
+    tags: [ml, deep-learning]
+
+  - id: my-mentor
+    title: "My Mentor"
+    kind: [tools]
+    org: personal
+    text: Built an academic peer-doubt platform on Django REST and SQLite, with indexing to speed up study-group lookups.
+    metrics: ["40% faster retrieval"]
+    tags: [django, sql]
+
+  # --- Achievements -------------------------------------------------------
+  - id: competitive-programming
+    title: "Competitive programming"
+    kind: [learning]
+    org: personal
+    text: LeetCode Knight (top 5%, max rating 1851) and CodeChef 3-star.
+    metrics: ["1200+ problems solved"]
+    tags: [dsa, students]
+
+  - id: gdsc
+    title: "GDSC President"
+    kind: [learning]
+    org: personal
+    text: President of the Google Developer Student Club (GDSC) at NIT Patna, a community of 200+ student developers. Mentored teams at the Byteverse hackathon.
+    metrics: ["200+ members"]
+    tags: [leadership, community, students]
+
+skills:
+  ai: [LLM orchestration (GPT, Gemini, Qwen), LangChain, LlamaIndex, LangGraph, RAG, Vector search (RedisVL, Chroma), MCP, Structured outputs, Semantic caching, Embeddings, Agentic workflows, Evals]
+  backend: [Java, Spring Boot, Spring Security, Python, FastAPI, Flask, Django REST, Node.js, REST, Microservices]
+  data: [MySQL, MongoDB, Redis, Aerospike, SQLite]
+  streaming: [Kafka, RabbitMQ, Openfire (XMPP), Event-driven architecture]
+  infra: [GCP, Docker, Kubernetes, CI/CD (Jenkins, GitHub Actions, GitLab CI), Prometheus, Grafana, Kibana]
+  frontend: [React, Redux, JavaScript]
+  ml: [PyTorch, TensorFlow, Pandas, NumPy]
+
+roles:
+  - title: Software Engineer
+    org: Info Edge India Ltd · Jeevansathi.com
+    dates: 07/2025 – Present
+    oneliner: "Backend & AI engineer on India's matrimony platform: real-time GenAI matchmaking, LLM cost optimisation, and replacing paid vendors with in-house systems."
+  - title: Software Engineering Intern
+    org: Info Edge India Ltd · 99acres.com
+    dates: 01/2025 – 06/2025
+    oneliner: Auth, API performance, event-driven refactors and a marketing landing page.
+
+services:
+  - title: AI agents & assistants
+    text: Assistants that answer from your own data, with sources, and say "I don't know" instead of guessing.
+  - title: AI tools that replace paid APIs
+    text: In-house tools that do what a paid service does, checked against it before you switch.
+
+# The hero chart. North-Indian kundli: house 1 is the top diamond, then anticlockwise.
+# Each house keeps its classical meaning and points at one real fact.
+kundli:
+  - house: 1
+    meaning: Self
+    label: Backend & AI
+    note: The 1st house is the self. Backend & AI engineer at Info Edge, building on Java, Kafka, Redis and LLMs.
+  - house: 2
+    meaning: Wealth
+    label: $45K saved
+    fact: milansathi
+  - house: 3
+    meaning: Effort & communication
+    label: AI first messages
+    fact: chat-suggestions
+  - house: 4
+    meaning: Foundations
+    label: NIT Patna
+    note: The 4th house is foundations. B.Tech in Computer Science from NIT Patna, CGPA 8.73.
+  - house: 5
+    meaning: Intellect & creation
+    label: Resume tailor
+    fact: resume-tailor
+  - house: 6
+    meaning: Competition
+    label: LeetCode Knight
+    fact: competitive-programming
+  - house: 7
+    meaning: Partnership & marriage
+    label: 500K+ matched
+    fact: kafka-matching
+  - house: 8
+    meaning: The hidden
+    label: 85% cache hits
+    fact: semantic-cache
+  - house: 9
+    meaning: Teachers & dharma
+    label: GDSC President
+    fact: gdsc
+  - house: 10
+    meaning: Career
+    label: Info Edge
+    note: The 10th house is career. Software engineer at Jeevansathi since July 2025, after an internship at 99acres.
+  - house: 11
+    meaning: Gains
+    label: $70K/yr saved
+    fact: firebase-replacement
+  - house: 12
+    meaning: Losses & letting go
+    label: Vendors dropped
+    note: The 12th house is what you let go of. Two paid vendors replaced with in-house systems, together saving about $115,000 a year.
+
+# What Devatraj can do. Each capability gets its own page: promise, proof, a tool to try.
+capabilities:
+  - slug: cut-costs
+    title: Replace what you pay for
+    short: Cut vendor bills
+    promise: If a vendor bill grows with your traffic, I build the in-house version and prove it gives the same answers before you switch.
+    for: Founders, CTOs and engineering managers with a vendor bill that keeps growing.
+    problems:
+      - Per-call pricing that grows with every new user.
+      - Rate limits and outages you can't do anything about.
+      - Your users' data leaving your systems.
+      - Features locked behind a higher plan.
+    proof: [milansathi, firebase-replacement, milansathi-parity]
+    headline_metric: ["$115K", "a year saved across two replacements"]
+    steps:
+      - title: Inventory what you really use
+        text: Most teams use a fraction of what they pay for. That fraction is all we rebuild.
+      - title: Build it in-house
+        text: Same contract, so the rest of your code barely notices.
+      - title: Prove it matches
+        text: Check it against the vendor on real data before any traffic moves.
+      - title: Switch safely
+        text: Roll out behind a flag, with automatic fallback to the vendor.
+  - slug: llm-cost
+    title: Make AI cheaper and faster
+    short: Lower LLM costs
+    promise: Most LLM bills pay for the same answer many times over. I cut repeat calls with semantic caching and keep answers reliable with fallbacks.
+    for: Product teams whose AI feature works, but costs too much or answers too slowly.
+    problems:
+      - Similar questions each trigger a full, paid model call.
+      - Slow answers in real-time flows like chat.
+      - One model provider is a single point of failure.
+    proof: [semantic-cache, genai-matchmaking, milansathi-ai]
+    headline_metric: ["85%", "of LLM calls served from cache in production"]
+    steps:
+      - title: Measure the repeats
+        text: Find how many requests are near-duplicates of earlier ones.
+      - title: Cache by meaning
+        text: Match new requests to past answers by embedding similarity, not exact text.
+      - title: Route across models
+        text: Use the cheapest model that is good enough, with a fallback when one fails.
+  - slug: ai-features
+    title: Ship AI features people use
+    short: AI inside your product
+    promise: AI that sits inside your product's main flow, where it moves a metric, not a chatbot bolted on the side.
+    for: Product managers and founders who want AI to change a number, not just a demo.
+    problems:
+      - AI demos that never reach production.
+      - Features users try once and ignore.
+      - LLM output that breaks your UI because it isn't structured.
+    proof: [chat-suggestions, structured-outputs, genai-matchmaking]
+    headline_metric: ["35%", "more conversions from one LLM feature"]
+    steps:
+      - title: Pick the moment
+        text: Find the step in your funnel where people stall.
+      - title: Ground it in your data
+        text: Generate from the user's real context, with structured output your app can trust.
+      - title: A/B test it
+        text: Ship to a share of users and keep it only if the metric moves.
+  - slug: scale
+    title: Backends that hold up
+    short: Systems that scale
+    promise: Event-driven backends that keep working when traffic spikes or a server dies.
+    for: Engineering leaders hiring for backend and platform work.
+    problems:
+      - Services that slow down or fall over at peak traffic.
+      - One failure cascading across the system.
+      - Config or behaviour changes that need a deploy.
+    proof: [firebase-replacement, kafka-matching, genai-matchmaking, api-aggregator, microservices-footprint]
+    headline_metric: ["10M+", "requests a day on a platform I built"]
+    steps:
+      - title: Decouple with events
+        text: Services talk through Kafka or RabbitMQ, so one slow consumer doesn't block the rest.
+      - title: Cache what's hot
+        text: Redis and ETags keep repeat reads off the database.
+      - title: Fail safe
+        text: Every dependency has a timeout and a fallback.
+  - slug: agents-tools
+    title: AI agents and internal tools
+    short: Agents & tools
+    promise: Tools your team uses every day, grounded in your own data, with sources, and honest about what they don't know.
+    for: Teams buried in repetitive work, and anyone who wants an assistant that knows their codebase or documents.
+    problems:
+      - Knowledge stuck in a few people's heads.
+      - AI tools that make things up confidently.
+      - Repetitive work nobody has time to automate.
+    proof: [resume-tailor, ai-code-reviewer, sutra]
+    headline_metric: ["100%", "citation accuracy in my code reviewer's evals"]
+    steps:
+      - title: Ground it
+        text: Retrieve from your own docs and code, and cite every answer.
+      - title: Check itself
+        text: A critic step verifies sources exist before the answer reaches you.
+      - title: Keep it safe
+        text: Read-only by default, with nothing leaving your systems that shouldn't.
+
+# How Devatraj works. Taken from the standing rules he wrote for the milanSathi repo.
+principles:
+  - title: Read before building
+    text: Understand the existing code and reuse its patterns before writing anything new.
+  - title: Prove it, don't trust it
+    text: A replacement ships only after it's checked against the system it replaces, and against first principles where the old system is wrong.
+  - title: Design before code
+    text: Agree on the approach first. Code is the cheap part once the design is right.
+  - title: Add, don't rewrite
+    text: Leave working logic alone. New behaviour goes beside it, behind a flag, with a way back.
+
+path:
+  - when: "2021"
+    what: Started B.Tech CSE at NIT Patna
+  - when: "2021 – 2025"
+    what: Solved 1,200+ problems. LeetCode Knight (top 5%), CodeChef 3-star
+  - when: "At NIT Patna"
+    what: President of the Google Developer Student Club (200+ members). Mentored Byteverse hackathon teams
+  - when: "Jan 2025"
+    what: Joined 99acres as a software engineering intern
+  - when: "Jul 2025"
+    what: Joined Jeevansathi as a software engineer
+  - when: "2026"
+    what: Built milanSathi, replacing a paid vendor and saving about $45,000 a year
+
+# Long-form case studies. Source: milanSathi repo docs (PROJECT_STATUS, pitch brief)
+# and the JsProfile integration commits. Public-safe: no code, endpoints, data or vendor name.
+case_studies:
+  milansathi:
+    title: milanSathi
+    summary: An in-house AI-powered astrology engine that replaced a paid third-party API on Jeevansathi.
+    facts: [milansathi, milansathi-parity, milansathi-vendor-bug, milansathi-honesty, milansathi-ai, milansathi-rollout]
+    problem:
+      - Every kundli and match was a paid call, so cost grew with traffic.
+      - The vendor rate-limited us under load.
+      - If the vendor went down, our astrology features went down with it.
+      - Users' birth details were sent to a third party.
+      - Bugs in the vendor's scoring flowed straight into our match scores.
+      - Some features we needed were blocked by the vendor's plan.
+    approach:
+      - title: Start from astronomy, not from the vendor
+        text: Planet positions come from Swiss Ephemeris, the same astronomical data the industry uses, with the Lahiri ayanamsa that India's calendar standard uses. Anything that is pure astronomy is computed from first principles.
+      - title: Match the vendor only where the vendor is right
+        text: Traditional tables (koota scores, classifications) were cross-checked against classical sources and against the vendor. Where they disagreed, the classical method wins and the vendor's behaviour stays available behind a switch.
+      - title: Be honest about what kind of answer each value is
+        text: Every value is labelled Type-1 (provable astronomy), Type-2 (classical standard) or Type-3 (varies by tradition). Users and reviewers can see which numbers are facts and which are conventions.
+      - title: Make the switch boring
+        text: A score endpoint returns exactly the shape the vendor returned, so a caller changes only a URL. In the main profile service it went live behind an experiment flag, with automatic fallback to the vendor on failure.

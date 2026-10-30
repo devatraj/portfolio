@@ -1,0 +1,154 @@
+---
+import Base from '../layouts/Base.astro';
+import Kundli from '../components/Kundli.astro';
+import { profile } from '../lib/profile.js';
+
+const { person: p, capabilities: caps } = profile;
+
+const GLANCE = [
+  ['$115K', 'a year saved by replacing two paid services'],
+  ['10M+', 'requests a day on a platform I built'],
+  ['85%', 'of LLM calls served from my semantic cache'],
+  ['500K+', 'users connected by my Kafka matching engine'],
+];
+const DOORS = [
+  { who: 'Hiring?', what: 'Experience, education and how I work.', href: '/about/', cta: 'About me' },
+  { who: 'Have a project?', what: 'AI agents and tools that replace paid services or manual work.', href: '/can/agents-tools/', cta: 'Agents & tools' },
+  { who: 'Student or engineer?', what: 'How I went from 1,200+ DSA problems to production systems.', href: '/about/#path', cta: 'My path' },
+];
+---
+<Base title={`${p.name}: Backend & AI engineer`} description="I build AI systems that replace what companies pay for. About $115,000 a year saved so far." page="home">
+  <section class="hero wrap">
+    <div class="intro">
+      <div class="hello">
+        {p.photo
+          ? <img class="avatar" src={p.photo} alt={p.name} width="56" height="56" />
+          : <span class="avatar ph" aria-hidden="true">DB</span>}
+        <p>Hi, I'm Devatraj. Backend &amp; AI engineer at Info Edge.</p>
+      </div>
+      <h1>I build AI systems that replace what companies pay for.</h1>
+      <p class="sub">I turn expensive vendors, slow AI features and fragile backends into systems your team owns, and I prove they work before anything switches over.</p>
+      <div class="ctas">
+        <a class="btn solid" href="#can">See what I can do</a>
+        <a class="btn" href={`mailto:${p.email}`}>Email me</a>
+        <a class="btn" href={p.links.linkedin} rel="me noopener" target="_blank">
+          <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 21 11.2 21 14.5V21h-4v-5.8c0-1.4-.03-3.2-1.95-3.2-1.95 0-2.25 1.52-2.25 3.1V21H9z"/></svg>
+          LinkedIn
+        </a>
+      </div>
+      <p class="live">
+        <b class="num" data-live-rate="115">0</b>
+        <span>requests served by the config platform I built since you opened this page, at its 10M+ a day average.</span>
+      </p>
+    </div>
+    <Kundli />
+  </section>
+
+  <section class="section wrap" id="can">
+    <div class="section-head">
+      <h2>What I can do for you</h2>
+      <p>Five things I'm good at. Each page has a small tool you can try and the work that proves it. Explore all five to fill the diamonds in the header.</p>
+    </div>
+    <div class="caps">
+      {caps.map((c) => (
+        <a class="cap" href={`/can/${c.slug}/`} data-visited={c.slug} data-spot>
+          <span class="cap-metric"><b class="num">{c.headline_metric[0]}</b> {c.headline_metric[1]}</span>
+          <h3>{c.title}</h3>
+          <p class="dim">{c.promise}</p>
+          <span class="go">Explore <i class="seen">Explored</i></span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head"><h2>At a glance</h2></div>
+    <ul class="glance">
+      {GLANCE.map(([n, t]) => <li><b class="num" data-count>{n}</b><span>{t}</span></li>)}
+    </ul>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head"><h2>Start where it makes sense for you</h2></div>
+    <div class="doors">
+      {DOORS.map((d) => (
+        <a class="door" href={d.href} data-spot>
+          <h3>{d.who}</h3>
+          <p class="dim">{d.what}</p>
+          <span class="go">{d.cta}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(48px, 6vw, 88px); align-items: start;
+    padding-block: clamp(56px, 9vw, 112px) 0; position: relative;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: -140px -40vw auto; height: 1000px; z-index: -1; pointer-events: none;
+    background-image:
+      radial-gradient(1.2px 1.2px at 12% 18%, #fff8 50%, transparent),
+      radial-gradient(1px 1px at 34% 72%, #fff6 50%, transparent),
+      radial-gradient(1.4px 1.4px at 58% 12%, #fff7 50%, transparent),
+      radial-gradient(1px 1px at 76% 64%, #fff5 50%, transparent),
+      radial-gradient(1.2px 1.2px at 88% 28%, #fff8 50%, transparent),
+      radial-gradient(1px 1px at 22% 48%, #fff4 50%, transparent),
+      radial-gradient(1px 1px at 66% 86%, #fff5 50%, transparent),
+      radial-gradient(60% 50% at 70% 40%, rgb(70 60 160 / 0.35), transparent);
+  }
+  .hello { display: flex; align-items: center; gap: 16px; color: var(--dim); margin-bottom: 32px; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; object-fit: cover; }
+  .avatar.ph { display: grid; place-items: center; font: 600 1rem var(--display); color: var(--gold); background: var(--night-3); border: 1.5px dashed var(--gold); }
+  .intro { padding-top: clamp(0px, 3vw, 40px); }
+  h1 { font-size: clamp(2.1rem, 4.9vw, 3.8rem); line-height: 1.04; letter-spacing: -0.035em; text-wrap: balance; }
+  .sub { color: var(--dim); font-size: 1.15rem; margin-top: 28px; max-width: 34rem; line-height: 1.6; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 40px; }
+  .li { width: 17px; height: 17px; }
+  .live { display: flex; gap: 16px; align-items: baseline; margin-top: 44px; max-width: 34rem; }
+  .live b { font: 600 1.5rem var(--display); color: var(--teal); min-width: 4.5ch; font-variant-numeric: lining-nums; }
+  .live span { color: var(--dim); font-size: 0.88rem; line-height: 1.5; }
+
+  .caps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
+  .cap { grid-column: span 2; }
+  .cap:nth-child(1), .cap:nth-child(2) { grid-column: span 3; }
+  .cap, .door {
+    position: relative; overflow: hidden; display: grid; gap: 14px; align-content: start;
+    padding: clamp(26px, 3vw, 36px); border-radius: var(--radius-lg); text-decoration: none;
+    background: var(--night-2); border: 1px solid var(--line);
+    transition: border-color 0.25s, transform 0.25s;
+  }
+  .cap::before, .door::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgb(242 181 68 / 0.14), transparent 60%);
+  }
+  .cap:hover, .door:hover { border-color: var(--gold); color: inherit; transform: translateY(-3px); }
+  .cap:hover::before, .door:hover::before { opacity: 1; }
+  .cap-metric { color: var(--dim); font-size: 0.88rem; }
+  .cap-metric b { font: 600 1.4rem var(--display); color: var(--gold); margin-right: 6px; }
+  .cap h3 { font-size: clamp(1.15rem, 1.8vw, 1.35rem); }
+  .cap p { font-size: 0.98rem; }
+  .go { font-weight: 650; color: var(--gold); margin-top: 8px; display: flex; gap: 12px; align-items: center; }
+  .seen { display: none; font-style: normal; font-size: 0.78rem; color: var(--teal); border: 1px solid var(--teal); border-radius: 999px; padding: 1px 9px; }
+  .cap:global(.visited) .seen { display: inline-block; }
+
+  .glance { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 40px 32px; }
+  .glance li { display: grid; gap: 8px; padding-top: 24px; border-top: 2px solid var(--line); }
+  .glance b { font: 600 clamp(2rem, 4vw, 2.6rem) var(--display); color: var(--gold); letter-spacing: -0.03em; line-height: 1; }
+  .glance span { color: var(--dim); }
+
+  .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
+
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+    .caps { grid-template-columns: 1fr; }
+    .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: auto; }
+  }
+  @media (min-width: 961px) and (max-width: 1100px) {
+    .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: span 3; }
+    .cap:last-child { grid-column: span 6; }
+  }
+</style>

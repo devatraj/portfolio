@@ -1,0 +1,162 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile, factById as F } from '../lib/profile.js';
+
+const { person: p, education: edu, skills, path, principles, roles } = profile;
+
+const IMPACT = [
+  [
+    ['~$45K', 'a year saved by replacing a paid astrology API with milanSathi'],
+    ['$70K', 'a year saved by replacing Firebase Remote Config, at 10M+ requests a day'],
+    ['85%', 'semantic-cache hit ratio on LLM calls, with 40% lower message latency'],
+    ['500K+', 'users connected by a Kafka-based matching engine'],
+    ['35%', 'more conversions from LLM-regenerated listing data'],
+    ['99.9%', 'uptime on a real-time GenAI matchmaking engine'],
+  ],
+  [
+    ['33%', 'higher CTA conversion from a marketing landing page I built'],
+    ['5,000+', 'daily logins on the OTP auth I rebuilt with Spring Security and JWT'],
+    ['15%', 'lower API latency through a Spring Boot API aggregator'],
+    ['30%', 'less duplicated code after moving approvals onto RabbitMQ'],
+  ],
+];
+const SKILL_GROUPS = {
+  'AI & LLMs': skills.ai, Backend: skills.backend, Streaming: skills.streaming,
+  Databases: skills.data, Infrastructure: skills.infra, Frontend: skills.frontend, 'Machine learning': skills.ml,
+};
+const TABS = [['experience', 'Experience'], ['education', 'Education'], ['path', 'My path'], ['how', 'How I work'], ['skills', 'Skills']];
+---
+<Base title={`About: ${p.name}`} description="Experience, education, the path from DSA to production, and how I work." page="about">
+  <section class="wrap top">
+    <h1>About me</h1>
+    <p class="lead">Backend &amp; AI engineer at Info Edge, working on Jeevansathi. Before that, an intern at 99acres and a computer science student at NIT Patna. {F['microservices-footprint'].text.replace('.', '')}, with {F['microservices-footprint'].metrics[0]}.</p>
+    <nav class="jump" aria-label="On this page">
+      {TABS.map(([id, label]) => <a href={`#${id}`} data-jump={id}>{label}</a>)}
+    </nav>
+  </section>
+
+  <section class="wrap section" id="experience">
+    <div class="section-head"><h2>Experience</h2></div>
+    {roles.map((r, i) => (
+      <article class="role">
+        <header>
+          <h3>{r.title}</h3>
+          <p class="dim">{r.org}</p>
+          <p class="dim num">{r.dates}</p>
+          <p class="one">{r.oneliner}</p>
+        </header>
+        <ul class="impact">
+          {IMPACT[i].map(([n, t]) => <li><b class="num" data-count>{n}</b><span>{t}</span></li>)}
+        </ul>
+      </article>
+    ))}
+  </section>
+
+  <section class="wrap section" id="education">
+    <div class="section-head"><h2>Education</h2></div>
+    <article class="role">
+      <header>
+        <h3>{edu.degree}</h3>
+        <p class="dim">{edu.school}</p>
+        <p class="dim num">{edu.years}</p>
+        <p class="one">{edu.oneliner}</p>
+      </header>
+      <ul class="impact">
+        {edu.highlights.map(([n, t]) => <li><b class="num" data-count>{n}</b><span>{t}</span></li>)}
+      </ul>
+    </article>
+  </section>
+
+  <section class="wrap section" id="path">
+    <div class="split">
+      <div class="section-head">
+        <h2>From DSA to production</h2>
+        <p>For students and engineers asking how I got here. Scroll and the path fills in.</p>
+      </div>
+      <ol class="path" data-timeline>
+        {path.map((s) => <li><span class="when num">{s.when}</span><span class="what">{s.what}</span></li>)}
+      </ol>
+    </div>
+  </section>
+
+  <section class="wrap section" id="how">
+    <div class="section-head">
+      <h2>How I work</h2>
+      <p>The rules I hold myself to on every change.</p>
+    </div>
+    <dl class="rules">
+      {principles.map((r) => <div><dt>{r.title}</dt><dd>{r.text}</dd></div>)}
+    </dl>
+  </section>
+
+  <section class="wrap section" id="skills">
+    <div class="section-head"><h2>Skills</h2></div>
+    <dl class="skills">
+      {Object.entries(SKILL_GROUPS).map(([k, v]) => (
+        <div><dt>{k}</dt><dd>{v.map((s) => <span>{s}</span>)}</dd></div>
+      ))}
+    </dl>
+  </section>
+</Base>
+
+<script is:inline>
+  (() => {
+    const links = [...document.querySelectorAll('[data-jump]')];
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => {
+        if (!e.isIntersecting) return;
+        links.forEach((a) => a.toggleAttribute('data-on', a.dataset.jump === e.target.id));
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    links.forEach((a) => { const s = document.getElementById(a.dataset.jump); if (s) io.observe(s); });
+  })();
+</script>
+
+<style>
+  .top { padding-top: clamp(64px, 10vw, 128px); display: grid; gap: 28px; }
+  h1 { font-size: clamp(2.3rem, 6vw, 4.2rem); letter-spacing: -0.04em; }
+  .lead { font-size: clamp(1.1rem, 2vw, 1.3rem); max-width: 44rem; line-height: 1.6; }
+  .jump {
+    position: sticky; top: 72px; z-index: 10; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    padding-block: 14px; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter);
+    background: rgb(15 19 48 / 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .jump a { flex: none; text-decoration: none; padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--dim); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+  .jump a:hover { color: var(--text); border-color: var(--gold); }
+  .jump a[data-on] { background: var(--gold); border-color: var(--gold); color: var(--night); }
+  @media (max-width: 880px) { .jump { top: 64px; } }
+
+  .role { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr); gap: 56px; padding-block: 48px; border-top: 1px solid var(--line); }
+  .role header { display: grid; gap: 6px; align-content: start; }
+  .role h3 { font-size: 1.2rem; margin-bottom: 6px; }
+  .one { margin-top: 14px; }
+  .impact { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 36px 36px; }
+  .impact li { display: grid; gap: 6px; align-content: start; }
+  .impact b { font: 600 1.85rem var(--display); letter-spacing: -0.03em; color: var(--gold); line-height: 1.05; }
+  .impact span { color: var(--dim); font-size: 0.95rem; }
+
+  .split { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+  .path { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); position: relative; }
+  .path::before { content: ''; position: absolute; left: -2px; top: 0; width: 2px; height: 100%; background: var(--gold); transform-origin: top; transform: scaleY(var(--fill, 0)); }
+  .path li { display: grid; grid-template-columns: 8rem 1fr; gap: 20px; padding: 18px 0 18px 28px; position: relative; }
+  .path li::before {
+    content: ''; position: absolute; left: -8px; top: 26px; width: 12px; height: 12px; transform: rotate(45deg);
+    background: var(--night); border: 2px solid var(--line); transition: background-color 0.3s, border-color 0.3s;
+  }
+  .path li:global(.passed)::before { background: var(--gold); border-color: var(--gold); }
+  .when { color: var(--gold); font-size: 0.92rem; padding-top: 0.1em; }
+  .what { color: var(--dim); transition: color 0.3s; }
+  .path li:global(.passed) .what { color: var(--text); }
+
+  .rules, .skills { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 44px 48px; }
+  .rules dt { font: 600 1.1rem var(--display); margin-bottom: 10px; }
+  .rules dd, .skills dd { margin: 0; color: var(--dim); }
+  .skills dt { font-weight: 700; margin-bottom: 12px; }
+  .skills dd { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skills dd span { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.86rem; color: var(--text); }
+
+  @media (max-width: 900px) {
+    .role, .split { grid-template-columns: 1fr; gap: 32px; }
+    .path li { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

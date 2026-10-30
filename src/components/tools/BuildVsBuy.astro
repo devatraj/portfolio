@@ -1,0 +1,95 @@
+---
+// Build-vs-buy estimator: cumulative vendor spend vs a one-time build plus running cost.
+---
+<div class="tool" data-bvb>
+  <div class="tool-head">
+    <h3>Should you build it in-house?</h3>
+    <p>Put in your vendor bill and a rough build cost. See when building pays for itself.</p>
+  </div>
+
+  <div class="fields">
+    <label class="field"><span>Vendor bill per month today <b data-o="bill"></b></span>
+      <input type="range" min="200" max="20000" step="100" value="3000" data-i="bill" /></label>
+    <label class="field"><span>Bill growth per month <b data-o="growth"></b></span>
+      <input type="range" min="0" max="15" step="0.5" value="4" data-i="growth" /></label>
+    <label class="field"><span>One-time build cost <b data-o="build"></b></span>
+      <input type="range" min="2000" max="150000" step="1000" value="25000" data-i="build" /></label>
+    <label class="field"><span>Running cost in-house per month <b data-o="run"></b></span>
+      <input type="range" min="0" max="5000" step="50" value="300" data-i="run" /></label>
+  </div>
+
+  <svg class="chart" viewBox="0 0 600 240" role="img" aria-label="Cumulative cost over three years, vendor versus in-house" data-chart>
+    <g class="grid"></g>
+    <path class="vendor" d="" />
+    <path class="inhouse" d="" />
+    <circle class="cross" r="6" cx="-20" cy="-20" />
+    <text class="lbl v" x="0" y="0">Vendor</text>
+    <text class="lbl h" x="0" y="0">In-house</text>
+  </svg>
+
+  <div class="results" aria-live="polite">
+    <div class="result"><b data-r="payback">–</b><span>until it pays for itself</span></div>
+    <div class="result"><b data-r="save3">–</b><span>saved over 3 years</span></div>
+    <div class="result"><b data-r="vendor3">–</b><span>you'd pay the vendor in 3 years</span></div>
+  </div>
+  <p class="tool-note">A rough estimate to start the conversation. My two replacements save about $115,000 a year combined.</p>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-bvb]').forEach((el) => {
+    const $ = (s) => el.querySelector(s);
+    const usd = (n) => '$' + Math.round(n).toLocaleString('en-US');
+    const short = (n) => (n >= 1e6 ? '$' + (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? '$' + Math.round(n / 1e3) + 'K' : usd(n));
+    const W = 600, H = 240, PAD = 8, M = 36;
+    function run() {
+      const v = Object.fromEntries([...el.querySelectorAll('[data-i]')].map((i) => [i.dataset.i, +i.value]));
+      $('[data-o=bill]').textContent = usd(v.bill);
+      $('[data-o=growth]').textContent = v.growth + '%';
+      $('[data-o=build]').textContent = usd(v.build);
+      $('[data-o=run]').textContent = usd(v.run);
+      const vendor = [0], inhouse = [v.build];
+      let bill = v.bill, payback = null;
+      for (let m = 1; m <= M; m++) {
+        vendor.push(vendor[m - 1] + bill);
+        inhouse.push(inhouse[m - 1] + v.run);
+        if (payback === null && vendor[m] >= inhouse[m]) payback = m;
+        bill *= 1 + v.growth / 100;
+      }
+      const max = Math.max(vendor[M], inhouse[M]) * 1.05;
+      const x = (m) => PAD + (m / M) * (W - PAD * 2 - 70);
+      const y = (c) => H - PAD - (c / max) * (H - PAD * 2);
+      const path = (arr) => arr.map((c, m) => (m ? 'L' : 'M') + x(m).toFixed(1) + ' ' + y(c).toFixed(1)).join(' ');
+      $('.vendor').setAttribute('d', path(vendor));
+      $('.inhouse').setAttribute('d', path(inhouse));
+      // Keep the two end labels at least 16px apart when the lines finish close together.
+      let yv = y(vendor[M]) + 4, yh = y(inhouse[M]) + 4;
+      if (Math.abs(yv - yh) < 16) { const mid = (yv + yh) / 2, up = vendor[M] >= inhouse[M]; yv = mid + (up ? -8 : 8); yh = mid + (up ? 8 : -8); }
+      $('.lbl.v').setAttribute('x', x(M) + 8); $('.lbl.v').setAttribute('y', yv);
+      $('.lbl.h').setAttribute('x', x(M) + 8); $('.lbl.h').setAttribute('y', yh);
+      const g = $('.grid'); g.innerHTML = '';
+      [12, 24, 36].forEach((m) => {
+        g.insertAdjacentHTML('beforeend', `<line x1="${x(m)}" x2="${x(m)}" y1="${PAD}" y2="${H - PAD}"/><text x="${x(m) - 4}" y="${H - 14}" text-anchor="end">${m / 12}y</text>`);
+      });
+      const c = $('.cross');
+      if (payback) { c.setAttribute('cx', x(payback)); c.setAttribute('cy', y(inhouse[payback])); }
+      else { c.setAttribute('cx', -20); }
+      $('[data-r=payback]').textContent = payback ? payback + (payback === 1 ? ' month' : ' months') : 'Over 3 years';
+      $('[data-r=save3]').textContent = vendor[M] > inhouse[M] ? short(vendor[M] - inhouse[M]) : '$0';
+      $('[data-r=vendor3]').textContent = short(vendor[M]);
+    }
+    el.querySelectorAll('[data-i]').forEach((i) => i.addEventListener('input', run));
+    run();
+  });
+</script>
+
+<style>
+  .chart { width: 100%; height: auto; overflow: visible; }
+  .chart :global(.grid line) { stroke: var(--line); stroke-dasharray: 3 5; }
+  .chart :global(.grid text) { fill: var(--dim); font-size: 11px; }
+  .vendor { fill: none; stroke: #ff9b8a; stroke-width: 3; stroke-linejoin: round; }
+  .inhouse { fill: none; stroke: var(--teal); stroke-width: 3; stroke-linejoin: round; }
+  .cross { fill: var(--gold); stroke: var(--night-2); stroke-width: 3; transition: cx 0.2s, cy 0.2s; }
+  .lbl { font-size: 12px; font-weight: 700; }
+  .lbl.v { fill: #ff9b8a; }
+  .lbl.h { fill: var(--teal); }
+</style>

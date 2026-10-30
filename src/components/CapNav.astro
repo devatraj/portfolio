@@ -1,0 +1,35 @@
+---
+import { profile } from '../lib/profile.js';
+
+const { current } = Astro.props;
+const caps = profile.capabilities;
+---
+<nav class="capnav" aria-label="What I do">
+  <div class="wrap scroller">
+    {caps.map((c) => (
+      <a href={`/can/${c.slug}/`} aria-current={c.slug === current ? 'page' : undefined} data-visited={c.slug}>
+        <i aria-hidden="true"></i>{c.short}
+      </a>
+    ))}
+  </div>
+</nav>
+
+<style>
+  .capnav {
+    position: sticky; top: 72px; z-index: 20;
+    background: rgb(15 19 48 / 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .scroller { display: flex; gap: 8px; overflow-x: auto; padding-block: 12px; scrollbar-width: none; }
+  .scroller::-webkit-scrollbar { display: none; }
+  a {
+    flex: none; display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+    padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--dim);
+    font-size: 0.9rem; font-weight: 600; transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+  }
+  a:hover { color: var(--text); border-color: var(--gold); }
+  a[aria-current='page'] { background: var(--gold); border-color: var(--gold); color: var(--night); }
+  i { width: 7px; height: 7px; transform: rotate(45deg); border: 1.5px solid currentColor; }
+  a:global(.visited) i { background: currentColor; }
+  @media (max-width: 880px) { .capnav { top: 64px; } }
+</style>

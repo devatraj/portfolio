@@ -1,0 +1,68 @@
+---
+// Illustration of resume-tailor on a phone. Coverage figures are the measured results on real JDs.
+const JDS = {
+  backend: { label: 'Backend SDE', cov: 73, top: ['Java', 'Spring Boot', 'Kafka', 'Redis', 'Microservices'], gap: 'Kotlin' },
+  ai: { label: 'AI Engineer', cov: 89, top: ['LLMs', 'RAG', 'LangChain', 'Python', 'Vector search'], gap: 'AWS' },
+};
+---
+<div class="phone" data-phone data-jds={JSON.stringify(JDS)}>
+  <div class="screen">
+    <p class="app">resume-tailor</p>
+    <div class="pick" role="group" aria-label="Pick a job post">
+      <button type="button" aria-pressed="false" data-jd="backend">Backend SDE</button>
+      <button type="button" aria-pressed="true" data-jd="ai">AI Engineer</button>
+    </div>
+    <div class="cov" aria-live="polite">
+      <b class="num" data-cov>{JDS.ai.cov}%</b>
+      <span>coverage of what this job asks for</span>
+    </div>
+    <p class="h">Moved to the top</p>
+    <div class="chips" data-top>{JDS.ai.top.map((s) => <span>{s}</span>)}</div>
+    <p class="h">Gap, not added</p>
+    <div class="gap">This job wants <b data-gap>{JDS.ai.gap}</b>. You don't list it, so it stays off your resume.</div>
+    <div class="go">Download tailored PDF</div>
+  </div>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-phone]').forEach((el) => {
+    const J = JSON.parse(el.dataset.jds);
+    const cov = el.querySelector('[data-cov]');
+    let shown = J.ai.cov;
+    el.querySelectorAll('[data-jd]').forEach((b) => b.addEventListener('click', () => {
+      const jd = J[b.dataset.jd];
+      el.querySelectorAll('[data-jd]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      el.querySelector('[data-top]').innerHTML = jd.top.map((s) => `<span>${s}</span>`).join('');
+      el.querySelector('[data-gap]').textContent = jd.gap;
+      const from = shown, to = jd.cov, t0 = performance.now();
+      shown = to;
+      const step = (now) => {
+        const p = Math.min(1, (now - t0) / 600);
+        cov.textContent = Math.round(from + (to - from) * (1 - (1 - p) ** 3)) + '%';
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }));
+  });
+</script>
+
+<style>
+  .phone {
+    width: min(100%, 290px); margin-inline: auto; padding: 12px; border-radius: 42px;
+    background: #23295a; box-shadow: 0 30px 80px -30px rgb(162 164 204 / 0.4);
+  }
+  .screen { background: #f5f6fc; color: #1b1f3d; border-radius: 32px; padding: 26px 18px 20px; display: grid; gap: 12px; font-size: 0.8rem; }
+  .app { font: 600 0.85rem var(--display); text-align: center; }
+  .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #e3e6fb; border-radius: 999px; padding: 4px; }
+  .pick button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 7px 4px; cursor: pointer; background: transparent; color: #5a5f86; }
+  .pick button[aria-pressed='true'] { background: #1b1f3d; color: #fff; }
+  .pick button:focus-visible { outline: 2px solid #1b1f3d; outline-offset: 2px; }
+  .cov { display: flex; align-items: center; gap: 12px; background: #1b1f3d; color: #fff; border-radius: 14px; padding: 12px 14px; }
+  .cov b { font: 600 1.6rem var(--display); color: var(--gold); min-width: 3.2ch; }
+  .cov span { font-size: 0.75rem; line-height: 1.3; }
+  .h { font-weight: 700; font-size: 0.72rem; color: #5a5f86; margin-top: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips :global(span) { background: #e3e6fb; border-radius: 999px; padding: 3px 10px; font-weight: 600; }
+  .gap { background: #fff1ee; color: #a8402d; border-radius: 10px; padding: 10px 12px; }
+  .go { text-align: center; background: #1b1f3d; color: #fff; border-radius: 999px; padding: 10px; font-weight: 700; }
+</style>

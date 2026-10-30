@@ -1,0 +1,173 @@
+---
+// A small Kafka playground: events flow through 3 partitions to 3 consumers.
+// Spike the traffic or stop a consumer and watch lag build and the group rebalance.
+---
+<div class="tool" data-kafka>
+  <div class="tool-head">
+    <h3>Break it and watch it recover</h3>
+    <p>Events flow through a topic with three partitions to three consumers. Spike the traffic or stop a consumer. Nothing gets lost: the group rebalances and works through the backlog.</p>
+  </div>
+
+  <canvas width="640" height="300" aria-label="Animated diagram of events moving through three Kafka partitions to consumers"></canvas>
+
+  <div class="controls">
+    <label class="field"><span>Events per second <b data-o="rate"></b></span>
+      <input type="range" min="3" max="30" step="1" value="12" data-rate /></label>
+    <div class="btns">
+      <button type="button" class="btn" data-spike>Spike traffic ×4</button>
+      <button type="button" class="btn" data-kill>Stop a consumer</button>
+      <button type="button" class="btn" data-reset>Reset</button>
+    </div>
+  </div>
+
+  <div class="results" aria-live="polite">
+    <div class="result"><b data-m="done">0</b><span>events processed</span></div>
+    <div class="result"><b data-m="lag">0</b><span>waiting (consumer lag)</span></div>
+    <div class="result"><b data-m="lost">0</b><span>events lost</span></div>
+  </div>
+  <p class="tool-note" data-status>All 3 consumers healthy.</p>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-kafka]').forEach((el) => {
+    const cv = el.querySelector('canvas'), cx = cv.getContext('2d');
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    // Size the drawing to the element so text stays 12px on phones instead of shrinking.
+    const H = 300;
+    let W, QX, CX;
+    function size() {
+      W = Math.max(330, Math.round(cv.clientWidth || 640));
+      QX = W - 220; CX = W - 116;
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.height = H + 'px';
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    size();
+    addEventListener('resize', () => { size(); draw(performance.now()); });
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = (s) => el.querySelector(s);
+    const LANE_Y = [70, 150, 230], CAP = 9;
+    const COLORS = ['#f2b544', '#6fd3c5', '#8c97ff'];
+    let S;
+    function reset() {
+      S = {
+        msgs: [], queue: [0, 0, 0], done: 0, acc: 0, spikeUntil: 0, rebalanceAt: 0,
+        consumers: [{ alive: true, parts: [0] }, { alive: true, parts: [1] }, { alive: true, parts: [2] }],
+        credit: [0, 0, 0],
+      };
+      $('[data-kill]').disabled = false;
+      $('[data-status]').textContent = 'All 3 consumers healthy.';
+    }
+    reset();
+    const rateEl = $('[data-rate]');
+    const showRate = () => ($('[data-o=rate]').textContent = rateEl.value);
+    rateEl.addEventListener('input', showRate); showRate();
+
+    $('[data-spike]').addEventListener('click', () => { S.spikeUntil = performance.now() + 4000; });
+    $('[data-kill]').addEventListener('click', () => {
+      const c = S.consumers.find((c) => c.alive && c.parts.length);
+      if (!c || S.consumers.filter((c) => c.alive).length < 2) return;
+      c.alive = false;
+      S.orphans = c.parts; c.parts = [];
+      S.rebalanceAt = performance.now() + 1500;
+      $('[data-kill]').disabled = true;
+      $('[data-status]').textContent = 'A consumer stopped. The group is rebalancing its partition…';
+    });
+    $('[data-reset]').addEventListener('click', reset);
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const rate = +rateEl.value * (now < S.spikeUntil ? 4 : 1);
+      // Produce, round-robin by key across partitions.
+      S.acc += rate * dt;
+      while (S.acc >= 1) { S.acc -= 1; S.msgs.push({ p: Math.floor(Math.random() * 3), x: 20 }); }
+      // Move events along their lane; on arrival they join the partition's backlog.
+      // Every event crosses its lane in about 1.2s, whatever the screen width.
+      S.msgs.forEach((m) => (m.x += ((QX - 20) / 1.2) * dt));
+      S.msgs = S.msgs.filter((m) => { if (m.x >= QX) { S.queue[m.p]++; return false; } return true; });
+      // Rebalance: give the orphaned partition to the live consumer with the fewest.
+      if (S.rebalanceAt && now >= S.rebalanceAt) {
+        const live = S.consumers.filter((c) => c.alive).sort((a, b) => a.parts.length - b.parts.length);
+        S.orphans.forEach((p) => live[0].parts.push(p));
+        S.rebalanceAt = 0; S.orphans = [];
+        $('[data-status]').textContent = 'Rebalanced. One consumer now reads two partitions and works through the backlog.';
+      }
+      // Each consumer processes up to CAP events a second, shared across its partitions.
+      S.consumers.forEach((c, i) => {
+        if (!c.alive || !c.parts.length) return;
+        S.credit[i] += CAP * dt;
+        while (S.credit[i] >= 1) {
+          const p = c.parts.reduce((a, b) => (S.queue[b] > S.queue[a] ? b : a), c.parts[0]);
+          if (!S.queue[p]) { S.credit[i] = Math.min(S.credit[i], 1); break; }
+          S.queue[p]--; S.done++; S.credit[i] -= 1;
+        }
+      });
+      draw(now);
+      if (!visible) { running = false; return; }
+      $('[data-m=done]').textContent = S.done.toLocaleString('en-US');
+      $('[data-m=lag]').textContent = (S.queue[0] + S.queue[1] + S.queue[2]).toLocaleString('en-US');
+      requestAnimationFrame(frame);
+    }
+    function draw(now) {
+      cx.clearRect(0, 0, W, H);
+      cx.font = '600 12px system-ui, sans-serif';
+      cx.fillStyle = '#a2a4cc';
+      cx.fillText('Producers → topic with 3 partitions', 14, 20);
+      cx.fillText('Consumers', CX, 20);
+      LANE_Y.forEach((y, p) => {
+        cx.strokeStyle = '#2d3470'; cx.lineWidth = 22; cx.lineCap = 'round';
+        cx.beginPath(); cx.moveTo(20, y); cx.lineTo(QX, y); cx.stroke();
+        cx.fillStyle = '#a2a4cc'; cx.fillText('P' + p, QX + 14, y - 18);
+        // Backlog as stacked blocks.
+        const n = S.queue[p];
+        for (let k = 0; k < Math.min(n, 24); k++) {
+          cx.fillStyle = COLORS[p];
+          cx.fillRect(QX + 14 + (k % 8) * 10, y - 8 + Math.floor(k / 8) * 10 - 4, 8, 8);
+        }
+        if (n > 24) { cx.fillStyle = '#ecebfa'; cx.fillText('+' + (n - 24), QX + 14, y + 30); }
+      });
+      S.msgs.forEach((m) => {
+        cx.fillStyle = COLORS[m.p];
+        cx.beginPath(); cx.arc(m.x, LANE_Y[m.p], 5, 0, Math.PI * 2); cx.fill();
+      });
+      S.consumers.forEach((c, i) => {
+        const y = LANE_Y[i] - 26;
+        cx.lineWidth = 1.5;
+        cx.strokeStyle = c.alive ? '#6fd3c5' : '#ff9b8a';
+        cx.fillStyle = c.alive ? 'rgba(111,211,197,.08)' : 'rgba(255,155,138,.08)';
+        cx.beginPath(); cx.roundRect(CX, y, 104, 52, 10); cx.fill(); cx.stroke();
+        cx.fillStyle = c.alive ? '#ecebfa' : '#ff9b8a';
+        cx.fillText('Consumer ' + (i + 1), CX + 12, y + 21);
+        cx.fillStyle = '#a2a4cc';
+        cx.fillText(c.alive ? (c.parts.length ? 'reads ' + c.parts.map((p) => 'P' + p).join(', ') : 'idle') : 'stopped', CX + 12, y + 39);
+        c.parts.forEach((p) => {
+          cx.strokeStyle = 'rgba(162,164,204,.35)'; cx.lineWidth = 1;
+          cx.beginPath(); cx.moveTo(QX + 96, LANE_Y[p]); cx.lineTo(CX, y + 26); cx.stroke();
+        });
+      });
+      if (S.rebalanceAt) {
+        cx.fillStyle = '#f2b544';
+        cx.fillText('rebalancing…', CX, H - 10);
+      }
+      if (now < S.spikeUntil) { cx.fillStyle = '#f2b544'; cx.fillText('traffic spike', 14, H - 10); }
+    }
+    draw(performance.now());
+    if (reduce) return;
+    // Animate only while the playground is on screen.
+    let visible = false, running = false;
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+    }).observe(el);
+  });
+</script>
+
+<style>
+  canvas { width: 100%; height: 300px; display: block; background: #0a0d22; border-radius: 14px; }
+  .controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 28px; align-items: end; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btns .btn { padding: 10px 16px; font-size: 0.9rem; }
+  .btns .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  @media (max-width: 720px) { .controls { grid-template-columns: 1fr; } }
+</style>

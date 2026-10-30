@@ -1,0 +1,77 @@
+---
+// LLM cost simulator: what a semantic cache saves at a given hit rate.
+---
+<div class="tool" data-llm>
+  <div class="tool-head">
+    <h3>What would a semantic cache save you?</h3>
+    <p>Set your traffic and your model's price. Then drag the cache hit rate. In production, mine runs at 85%.</p>
+  </div>
+
+  <div class="fields">
+    <label class="field"><span>LLM requests per day <b data-o="req"></b></span>
+      <input type="range" min="0" max="100" step="1" value="50" data-i="req" /></label>
+    <label class="field"><span>Tokens per request <b data-o="tok"></b></span>
+      <input type="range" min="200" max="8000" step="100" value="1500" data-i="tok" /></label>
+    <label class="field"><span>Your model's price per 1M tokens (USD)</span>
+      <input type="number" min="0.01" step="0.01" value="1.00" data-i="price" inputmode="decimal" /></label>
+    <label class="field"><span>Cache hit rate <b data-o="hit"></b></span>
+      <input type="range" min="0" max="95" step="1" value="85" data-i="hit" list="hit-marks" /></label>
+    <datalist id="hit-marks"><option value="85" label="Mine"></option></datalist>
+  </div>
+
+  <div class="bars" aria-hidden="true">
+    <div class="row"><span>Without cache</span><i class="b no" data-bar="no"></i><b data-v="no"></b></div>
+    <div class="row"><span>With cache</span><i class="b yes" data-bar="yes"></i><b data-v="yes"></b></div>
+  </div>
+
+  <div class="results" aria-live="polite">
+    <div class="result"><b data-r="month">–</b><span>saved per month</span></div>
+    <div class="result"><b data-r="year">–</b><span>saved per year</span></div>
+    <div class="result"><b data-r="calls">–</b><span>model calls you don't make, per day</span></div>
+  </div>
+  <p class="tool-note">Counts model tokens only. A cache adds a small embedding and Redis cost, and the right hit rate depends on how repetitive your traffic is. Mine also cut message latency by 40%.</p>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-llm]').forEach((el) => {
+    const $ = (s) => el.querySelector(s);
+    const usd = (n) => (n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : '$' + Math.round(n).toLocaleString('en-US'));
+    const num = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(Math.round(n)));
+    // The request slider is logarithmic: 1K to 10M a day.
+    const reqOf = (p) => Math.round(1000 * Math.pow(10, (p / 100) * 4));
+    function run() {
+      const req = reqOf(+$('[data-i=req]').value);
+      const tok = +$('[data-i=tok]').value;
+      const price = Math.max(0, +$('[data-i=price]').value || 0);
+      const hit = +$('[data-i=hit]').value / 100;
+      $('[data-o=req]').textContent = num(req);
+      $('[data-o=tok]').textContent = tok.toLocaleString('en-US');
+      $('[data-o=hit]').textContent = Math.round(hit * 100) + '%';
+      const no = (req * tok * 30 / 1e6) * price;
+      const yes = no * (1 - hit);
+      $('[data-v=no]').textContent = usd(no) + '/mo';
+      $('[data-v=yes]').textContent = usd(yes) + '/mo';
+      $('[data-bar=no]').style.width = '100%';
+      $('[data-bar=yes]').style.width = (no ? (yes / no) * 100 : 0) + '%';
+      $('[data-r=month]').textContent = usd(no - yes);
+      $('[data-r=year]').textContent = usd((no - yes) * 12);
+      $('[data-r=calls]').textContent = num(req * hit);
+    }
+    el.querySelectorAll('[data-i]').forEach((i) => i.addEventListener('input', run));
+    run();
+  });
+</script>
+
+<style>
+  .bars { display: grid; gap: 14px; }
+  .row { display: grid; grid-template-columns: 7.5rem 1fr 7rem; gap: 14px; align-items: center; font-size: 0.9rem; }
+  .row span { color: var(--dim); }
+  .row b { text-align: right; font-variant-numeric: lining-nums; }
+  .b { display: block; height: 14px; border-radius: 7px; transition: width 0.35s cubic-bezier(.2,.75,.25,1); min-width: 4px; }
+  .b.no { background: #ff9b8a; }
+  .b.yes { background: var(--teal); }
+  @media (max-width: 520px) {
+    .row { grid-template-columns: 1fr auto; }
+    .row .b { grid-column: 1 / -1; grid-row: 2; }
+  }
+</style>

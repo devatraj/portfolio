@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+import { profile } from '../../lib/profile.js';
+
+const cs = profile.case_studies.milansathi;
+const byId = Object.fromEntries(profile.facts.map((f) => [f.id, f]));
+const [headline, parity, bug, , ai, rollout] = cs.facts.map((id) => byId[id]);
+---
+<Base title={`${cs.title}: case study by ${profile.person.name}`} description={cs.summary}>
+  <article class="wrap cs">
+    <a class="back" href="/#work">Back to the portfolio</a>
+    <header>
+      <h1>{cs.title}</h1>
+      <p class="lede">{cs.summary}</p>
+      <ul class="outcomes num">
+        {headline.metrics.map((m) => <li>{m}</li>)}
+      </ul>
+    </header>
+
+    <section>
+      <h2>Why replace the vendor</h2>
+      <ul class="plainlist">
+        {cs.problem.map((p) => <li>{p}</li>)}
+      </ul>
+    </section>
+
+    <section>
+      <h2>How it was built</h2>
+      <dl class="steps">
+        {cs.approach.map((s) => (
+          <div>
+            <dt>{s.title}</dt>
+            <dd>{s.text}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <section>
+      <h2>Proof before switching</h2>
+      <p>{parity.text}</p>
+      <ul class="proof num">
+        {parity.metrics.map((m) => <li>{m}</li>)}
+      </ul>
+      <p>{bug.text}</p>
+    </section>
+
+    <section>
+      <h2>The AI layer</h2>
+      <p>{ai.text}</p>
+    </section>
+
+    <section>
+      <h2>Going live</h2>
+      <p>{rollout.text}</p>
+      {rollout.metrics && <p class="dim">Also: {rollout.metrics.join(', ')}.</p>}
+    </section>
+
+    <p class="note dim">
+      This page covers the problem, the approach and the outcomes. The code and internal systems stay with Jeevansathi.
+    </p>
+  </article>
+
+  <style>
+    .cs { max-width: calc(var(--measure) + 2 * var(--gutter)); padding-top: 32px; }
+    .back { font-size: 0.9rem; color: var(--dim); }
+    header { padding-block: 40px 16px; }
+    h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 650; letter-spacing: -0.035em; }
+    .lede { font-size: 1.3rem; line-height: 1.4; margin-top: 12px; }
+    .outcomes { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 8px 32px; }
+    .outcomes li { font-size: 1.15rem; font-weight: 700; color: var(--gold); }
+    section { padding-top: 56px; display: grid; gap: 16px; }
+    .plainlist { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+    .steps { margin: 0; display: grid; gap: 24px; }
+    .steps dt { font-weight: 700; }
+    .steps dd { margin: 4px 0 0; color: var(--dim); }
+    .proof { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--text); }
+    .proof li { padding: 10px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+    .note { margin-top: 64px; font-size: 0.9rem; }
+  </style>
+</Base>

@@ -1,0 +1,99 @@
+---
+// Illustration of a milanSathi match screen. Sample scores, no real people.
+const NAMES = ['Varna', 'Vashya', 'Tara', 'Yoni', 'Maitri', 'Gana', 'Bhakoot', 'Nadi'];
+const MAX = [1, 2, 3, 4, 5, 6, 7, 8];
+const SAMPLES = [
+  { v: [1, 2, 1.5, 3, 4, 6, 7, 0], starter: 'You both have the Moon in earth signs. Ask about the last thing they built with their hands.' },
+  { v: [0, 2, 3, 4, 5, 6, 7, 8], starter: 'Your charts share a strong Jupiter. Ask what they would teach if they had a free weekend.' },
+  { v: [1, 0.5, 1.5, 2, 1, 0, 0, 8], starter: 'Different temperaments, same values. Ask how they like to spend a slow Sunday.' },
+];
+const total = (v) => v.reduce((a, b) => a + b, 0);
+const C = 2 * Math.PI * 52;
+const first = SAMPLES[0];
+---
+<div class="mock" data-guna data-samples={JSON.stringify(SAMPLES)} data-c={C}>
+  <div class="top">
+    <div class="ring" aria-hidden="true">
+      <svg viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" class="track" />
+        <circle cx="60" cy="60" r="52" class="val" stroke-dasharray={`${(C * total(first.v)) / 36} ${C}`} />
+      </svg>
+      <div class="score"><b class="num" data-total>{total(first.v)}</b><span>of 36 gunas</span></div>
+    </div>
+    <div class="couple">
+      <p class="h">Kundli match</p>
+      <p class="sub">Ashtakoota, 8 kootas</p>
+      <p class="tag" data-verdict>Good match</p>
+    </div>
+  </div>
+  <ul class="bars" aria-hidden="true">
+    {NAMES.map((n, i) => (
+      <li>
+        <span>{n}</span>
+        <span class="bar"><i style={`width:${(first.v[i] / MAX[i]) * 100}%`}></i></span>
+        <span class="num pts">{first.v[i]}/{MAX[i]}</span>
+      </li>
+    ))}
+  </ul>
+  <div class="ai">
+    <p class="ai-h">AI conversation starter</p>
+    <p data-starter>{first.starter}</p>
+  </div>
+  <button type="button" class="again">Try another match</button>
+  <p class="cap">Illustration with sample scores</p>
+  <p class="sr" aria-live="polite" data-sr></p>
+</div>
+
+<script is:inline>
+  document.querySelectorAll('[data-guna]').forEach((el) => {
+    const S = JSON.parse(el.dataset.samples), C = +el.dataset.c, MAX = [1, 2, 3, 4, 5, 6, 7, 8];
+    let k = 0;
+    const verdict = (t) => (t >= 28 ? 'Excellent match' : t >= 18 ? 'Good match' : 'Needs care');
+    el.querySelector('.again').addEventListener('click', () => {
+      k = (k + 1) % S.length;
+      const s = S[k], t = s.v.reduce((a, b) => a + b, 0);
+      el.querySelector('.val').setAttribute('stroke-dasharray', `${(C * t) / 36} ${C}`);
+      el.querySelectorAll('.bar i').forEach((b, i) => (b.style.width = `${(s.v[i] / MAX[i]) * 100}%`));
+      el.querySelectorAll('.pts').forEach((p, i) => (p.textContent = `${s.v[i]}/${MAX[i]}`));
+      el.querySelector('[data-total]').textContent = t;
+      el.querySelector('[data-verdict]').textContent = verdict(t);
+      el.querySelector('[data-starter]').textContent = s.starter;
+      el.querySelector('[data-sr]').textContent = `${t} of 36 gunas, ${verdict(t)}.`;
+    });
+  });
+</script>
+
+<style>
+  .mock {
+    background: linear-gradient(160deg, #fff7ec, #fde9d4);
+    color: #2a1d10; border-radius: var(--radius-lg); padding: 26px;
+    box-shadow: 0 30px 80px -30px rgb(242 181 68 / 0.45);
+    display: grid; gap: 18px; position: relative; font-size: 0.92rem;
+  }
+  .top { display: flex; gap: 20px; align-items: center; }
+  .ring { position: relative; width: 120px; flex: none; }
+  .ring svg { transform: rotate(-90deg); }
+  .track { fill: none; stroke: #f1d6b4; stroke-width: 10; }
+  .val { fill: none; stroke: #d9761c; stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray 0.8s cubic-bezier(.2,.75,.25,1); }
+  .score { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
+  .score b { font: 600 1.7rem var(--display); }
+  .score span { font-size: 0.7rem; color: #7a6048; }
+  .h { font: 600 1.1rem var(--display); }
+  .sub { color: #7a6048; }
+  .tag { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #d9761c; color: #fff; font-weight: 650; font-size: 0.78rem; }
+  .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  .bars li { display: grid; grid-template-columns: 4.6rem 1fr 2.6rem; gap: 10px; align-items: center; }
+  .bar { height: 7px; border-radius: 4px; background: #f1d6b4; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #d9761c; border-radius: 4px; transition: width 0.7s cubic-bezier(.2,.75,.25,1); }
+  .pts { color: #7a6048; text-align: right; font-size: 0.8rem; }
+  .ai { background: #fff; border-radius: 14px; padding: 14px 16px; }
+  .ai-h { font-weight: 700; font-size: 0.78rem; color: #b0560c; margin-bottom: 4px; }
+  .again {
+    justify-self: start; font: inherit; font-weight: 700; cursor: pointer;
+    background: #2a1d10; color: #fff7ec; border: 0; border-radius: 999px; padding: 9px 18px;
+  }
+  .again:hover { background: #d9761c; }
+  .again:focus-visible { outline: 2px solid #d9761c; outline-offset: 3px; }
+  .cap { position: absolute; top: 12px; right: 16px; font-size: 0.7rem; color: #9a7e62; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+</style>

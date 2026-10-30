@@ -1,0 +1,166 @@
+---
+import '../styles/global.css';
+import { profile } from '../lib/profile.js';
+
+const { title, description, page = '', cap } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const p = profile.person;
+const caps = profile.capabilities;
+const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0f1330" />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body data-page={page} data-cap={cap}>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="bar">
+      <div class="wrap bar-in">
+        <a class="mark" href="/" aria-label={`${p.name}, home`}>
+          <svg viewBox="0 0 40 40" aria-hidden="true">
+            <rect x="1" y="1" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M1 1 L39 39 M39 1 L1 39 M20 1 L39 20 L20 39 L1 20 Z" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+          <span>{p.name.split(' ')[0]}<span class="last"> {p.name.split(' ').slice(1).join(' ')}</span></span>
+        </a>
+
+        <nav class="links" aria-label="Main">
+          <a href="/#can" aria-current={page === 'can' ? 'page' : undefined}>What I do</a>
+          <a href="/work/" aria-current={here('/work/')}>Work</a>
+          <a href="/about/" aria-current={here('/about/')}>About</a>
+        </nav>
+
+        <div class="right">
+          <a class="passport" href="/#can" data-passport title="Pages explored">
+            <span class="sr">Capability pages explored:</span>
+            {caps.map((c) => <i data-stamp={c.slug} aria-hidden="true"></i>)}
+            <span class="sr" data-passport-count>0 of {caps.length}</span>
+          </a>
+          <a class="btn solid small" href={`mailto:${p.email}`}>Email me</a>
+          <button type="button" class="menu-btn" aria-expanded="false" aria-controls="sheet" data-menu>Menu</button>
+        </div>
+      </div>
+      <div class="progress" data-progress aria-hidden="true"></div>
+      <div class="sheet" id="sheet" hidden data-sheet>
+        <nav class="wrap" aria-label="Mobile">
+          <p class="sheet-h">What I do</p>
+          {caps.map((c) => <a href={`/can/${c.slug}/`}>{c.title}</a>)}
+          <p class="sheet-h">More</p>
+          <a href="/work/">All work</a>
+          <a href="/about/">About me</a>
+          <a href={`mailto:${p.email}`}>Email me</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-in">
+        <div class="talk">
+          <h2>Let's build something.</h2>
+          <p class="dim">Hiring, a project, or just a question about something here. I reply to every email.</p>
+          <a class="mail" href={`mailto:${p.email}`}>{p.email}</a>
+        </div>
+        <div class="cols">
+          <div>
+            <p class="col-h">What I do</p>
+            {caps.map((c) => <a href={`/can/${c.slug}/`}>{c.short}</a>)}
+          </div>
+          <div>
+            <p class="col-h">Elsewhere</p>
+            <a href={p.links.linkedin}>LinkedIn</a>
+            <a href={p.links.github}>GitHub</a>
+            <a href={p.links.leetcode}>LeetCode</a>
+          </div>
+        </div>
+      </div>
+      <p class="wrap fine dim">{p.location}, open to relocating to {p.relocation}. Every number on this site comes from one file, <a href="https://github.com/devatraj/portfolio/blob/main/src/data/profile.yaml">profile.yaml</a>.</p>
+      <div class="toast" role="status" hidden data-toast>
+        <p><b>You've explored everything I can do.</b> Rare. Let's talk.</p>
+        <a class="btn solid small" href={`mailto:${p.email}?subject=I%20explored%20everything`}>Email me</a>
+        <button type="button" class="x" aria-label="Close" data-toast-close>×</button>
+      </div>
+    </footer>
+
+    <script>
+      import '../scripts/fx.js';
+    </script>
+
+    <style>
+      .bar {
+        position: sticky; top: 0; z-index: 30;
+        background: rgb(15 19 48 / 0.78);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgb(45 52 112 / 0.6);
+      }
+      .bar-in { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 72px; }
+      .mark { display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 700; }
+      .mark svg { width: 26px; height: 26px; color: var(--gold); flex: none; }
+      .links { display: flex; gap: 32px; font-size: 0.95rem; }
+      .links a { text-decoration: none; color: var(--dim); padding-block: 6px; border-bottom: 2px solid transparent; }
+      .links a:hover { color: var(--text); }
+      .links a[aria-current='page'] { color: var(--text); border-bottom-color: var(--gold); }
+      .right { display: flex; align-items: center; gap: 18px; }
+      .passport { display: flex; gap: 5px; text-decoration: none; padding: 8px 4px; }
+      .passport i { width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid var(--line); transition: background-color 0.4s, border-color 0.4s, transform 0.4s; }
+      .passport i.lit { background: var(--gold); border-color: var(--gold); }
+      .passport i.new { transform: rotate(45deg) scale(1.6); }
+      .small { padding: 9px 18px; font-size: 0.88rem; }
+      .menu-btn { display: none; font: inherit; font-weight: 650; color: var(--text); background: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+      .progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; }
+      .sheet { border-top: 1px solid var(--line); background: var(--night); max-height: calc(100dvh - 72px); overflow-y: auto; }
+      .sheet nav { display: grid; gap: 4px; padding-block: 20px 32px; }
+      .sheet a { text-decoration: none; font-size: 1.15rem; padding: 10px 0; }
+      .sheet-h { color: var(--gold); font-size: 0.85rem; font-weight: 650; margin-top: 16px; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+      .foot { margin-top: var(--space-section); border-top: 1px solid var(--line); background: linear-gradient(to bottom, var(--night-2), var(--night)); }
+      .foot-in { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 56px; padding-block: 96px 56px; }
+      .talk { display: grid; gap: 18px; align-content: start; }
+      .talk h2 { font-size: clamp(2rem, 5.2vw, 3.5rem); letter-spacing: -0.04em; }
+      .talk .dim { max-width: 32rem; }
+      .mail { font: 500 clamp(1.05rem, 2.6vw, 1.6rem) var(--display); color: var(--gold); text-decoration: none; overflow-wrap: anywhere; margin-top: 8px; }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+      .cols div { display: grid; gap: 10px; align-content: start; }
+      .cols a { text-decoration: none; color: var(--dim); }
+      .cols a:hover { color: var(--text); }
+      .col-h { font-weight: 700; margin-bottom: 6px; }
+      .fine { font-size: 0.85rem; padding-bottom: 48px; }
+
+      .toast {
+        position: fixed; z-index: 40; right: 20px; bottom: 20px; max-width: 360px;
+        background: var(--night-3); border: 1px solid var(--gold); border-radius: 18px; padding: 18px 44px 18px 20px;
+        display: grid; gap: 12px; justify-items: start; box-shadow: 0 20px 60px -20px #000;
+        animation: rise 0.5s cubic-bezier(.2,.9,.3,1.2);
+      }
+      .x { position: absolute; top: 8px; right: 10px; font-size: 1.4rem; line-height: 1; color: var(--dim); background: none; border: 0; cursor: pointer; padding: 4px 8px; }
+      @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+
+      @media (max-width: 880px) {
+        .links, .right .btn { display: none; }
+        .menu-btn { display: inline-block; }
+        .bar-in { height: 64px; }
+        .mark span { font-size: 0.95rem; }
+        .foot-in { grid-template-columns: 1fr; padding-block: 72px 40px; gap: 48px; }
+      }
+      @media (max-width: 440px) {
+        .last { display: none; }
+      }
+    </style>
+  </body>
+</html>

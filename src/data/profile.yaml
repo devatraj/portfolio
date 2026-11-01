@@ -10,7 +10,7 @@ person:
   relocation: Bangalore
   email: devatrajb@gmail.com
   photo: null                      # set to /photo.jpg once the photo is in public/
-  phone: null                      # CONFIRM: keep phone OFF the public site (spam risk)
+  phone: "+91 88228 09501"
   links:
     linkedin: https://linkedin.com/in/devatraj
     github: https://github.com/devatraj

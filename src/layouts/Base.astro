@@ -61,6 +61,7 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
           <a href="/work/">All work</a>
           <a href="/about/">About me</a>
           <a href={`mailto:${p.email}`}>Email me</a>
+          {p.phone && <a href={`tel:${p.phone.replace(/\s/g, '')}`}>Call {p.phone}</a>}
         </nav>
       </div>
     </header>
@@ -73,8 +74,9 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
       <div class="wrap foot-in">
         <div class="talk">
           <h2>Let's build something.</h2>
-          <p class="dim">Hiring, a project, or just a question about something here. I reply to every email.</p>
+          <p class="dim">Hiring, a project, or just a question about something here. I reply to every message.</p>
           <a class="mail" href={`mailto:${p.email}`}>{p.email}</a>
+          {p.phone && <a class="tel num" href={`tel:${p.phone.replace(/\s/g, '')}`}>{p.phone}</a>}
         </div>
         <div class="cols">
           <div>
@@ -135,6 +137,8 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
       .talk h2 { font-size: clamp(2rem, 5.2vw, 3.5rem); letter-spacing: -0.04em; }
       .talk .dim { max-width: 32rem; }
       .mail { font: 500 clamp(1.05rem, 2.6vw, 1.6rem) var(--display); color: var(--gold); text-decoration: none; overflow-wrap: anywhere; margin-top: 8px; }
+      .tel { font: 500 clamp(1rem, 2vw, 1.25rem) var(--display); color: var(--text); text-decoration: none; }
+      .tel:hover { color: var(--gold); }
       .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
       .cols div { display: grid; gap: 10px; align-content: start; }
       .cols a { text-decoration: none; color: var(--dim); }

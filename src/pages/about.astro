@@ -29,7 +29,7 @@ const TABS = [['experience', 'Experience'], ['education', 'Education'], ['path',
 <Base title={`About: ${p.name}`} description="Experience, education, the path from DSA to production, and how I work." page="about">
   <section class="wrap top">
     <h1>About me</h1>
-    <p class="lead">Backend &amp; AI engineer at Info Edge, working on Jeevansathi. Before that, an intern at 99acres and a computer science student at NIT Patna. {F['microservices-footprint'].text.replace('.', '')}, with {F['microservices-footprint'].metrics[0]}.</p>
+    <p class="lead">Backend &amp; AI engineer at Info Edge, working on Jeevansathi. Before that, an intern at 99acres and a computer science student at NIT Patna. {F['microservices-footprint'].text}</p>
     <nav class="jump" aria-label="On this page">
       {TABS.map(([id, label]) => <a href={`#${id}`} data-jump={id}>{label}</a>)}
     </nav>

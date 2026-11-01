@@ -85,12 +85,10 @@ facts:
     tags: [data-pipelines, mongodb, marketing-tech]
 
   - id: microservices-footprint
-    title: "42 production microservices"
+    title: "Breadth across production services"
     kind: [backend]
     org: jeevansathi
-    text: Shipped changes across 42 production microservices.
-    metrics: ["596 commits, Dec 2025 – Oct 2026"]
-    source: git history across ServiceRepo
+    text: Shipped changes across dozens of production microservices.
     tags: [breadth]
 
   # --- milanSathi ---------------------------------------------------------
@@ -113,10 +111,10 @@ facts:
     tags: [validation, testing]
 
   - id: milansathi-vendor-bug
-    title: "milanSathi: the vendor bug"
+    title: "milanSathi: classical by default"
     kind: [cost]
     org: jeevansathi
-    text: Found a scoring bug in the vendor's Yoni table. The engine is classically correct by default and can reproduce the vendor's behaviour behind a switch.
+    text: Where the old scoring disagreed with classical sources, the engine follows the classical method by default and can reproduce the old behaviour behind a switch.
     tags: [correctness]
 
   - id: milansathi-honesty
@@ -143,11 +141,11 @@ facts:
     tags: [java, spring-boot, feign, experimentation, reliability]
 
   - id: sutra
-    title: "Sutra (team project)"
+    title: "Internal AI engineering assistant (team project)"
     kind: [tools, ai]
     org: jeevansathi
     credit: Contributed
-    text: Contributed to Sutra, the team's internal AI engineering assistant. I built its live-production Debug/RCA tool (reads prod logs and cross-service traces, leads with evidence, never a verdict), one-command setup, conversational follow-ups and a plan-approval gate in its agent engine.
+    text: Contributed to the team's internal AI engineering assistant. I built its live-production Debug/RCA tool (reads prod logs and cross-service traces, leads with evidence, never a verdict), one-command setup, conversational follow-ups and a plan-approval gate in its agent engine.
     plain: "Helped build an internal AI assistant that answers engineers' questions about the codebase. My part: a tool that investigates live production issues and explains the likely cause with evidence."
     tags: [agents, claude, observability, internal-tools]
 
@@ -471,7 +469,7 @@ case_studies:
       - The vendor rate-limited us under load.
       - If the vendor went down, our astrology features went down with it.
       - Users' birth details were sent to a third party.
-      - Bugs in the vendor's scoring flowed straight into our match scores.
+      - Any error in the vendor's scoring flowed straight into our match scores.
       - Some features we needed were blocked by the vendor's plan.
     approach:
       - title: Start from astronomy, not from the vendor

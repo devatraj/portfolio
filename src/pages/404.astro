@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Page not found: Devatraj Bhattacharjee" description="This page doesn't exist." page="404">
+  <section class="wrap top">
+    <p class="eyebrow">404</p>
+    <h1>This house is empty.</h1>
+    <p class="dim lead">The page you asked for doesn't exist. It may have moved, or the link has a typo.</p>
+    <div class="ctas">
+      <a class="btn solid" href="/">Back to the chart</a>
+      <a class="btn" href="/work/">See all work</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .top { padding-block: clamp(96px, 14vw, 180px); display: grid; gap: 22px; justify-items: start; }
+  h1 { font: 700 clamp(2rem, 6vw, 3.6rem) / 1.05 var(--display); margin: 0; text-wrap: balance; }
+  .lead { font-size: 1.15rem; max-width: 40ch; margin: 0; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+</style>

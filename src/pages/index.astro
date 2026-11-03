@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Kundli from '../components/Kundli.astro';
+import Gochar from '../components/Gochar.astro';
 import { profile, factById, orgLabel } from '../lib/profile.js';
 
 const { person: p, capabilities: caps, education: edu, roles, principles, path, skills } = profile;
@@ -64,20 +65,11 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
 <Base title={`${p.name}: Backend & AI engineer`} description="I build AI systems that replace what companies pay for. About $115,000 a year saved so far." page="home">
   <section class="hero" data-hero>
     <div class="scene" aria-hidden="true">
-      <div class="planet" data-depth="0.12">
-        <svg viewBox="0 0 200 200">
-          <defs>
-            <radialGradient id="pl" cx="35%" cy="32%" r="75%">
-              <stop offset="0" stop-color="#ffe2a3" />
-              <stop offset="0.45" stop-color="#f2b544" />
-              <stop offset="1" stop-color="#7a4a12" />
-            </radialGradient>
-            <mask id="crescent"><rect width="200" height="200" fill="#fff" /><circle cx="128" cy="82" r="64" fill="#000" /></mask>
-          </defs>
-          <circle cx="100" cy="100" r="62" fill="url(#pl)" mask="url(#crescent)" />
-          <circle cx="100" cy="100" r="62" fill="none" stroke="#f2b544" stroke-opacity="0.25" />
-        </svg>
-      </div>
+      <div class="h-body h-moon" data-depth="0.12"><canvas data-sphere="moon" data-tex="512" data-moon-live></canvas></div>
+      <div class="h-body h-saturn" data-depth="0.2"><canvas data-sphere="saturn" data-tex="512" data-spin="0.03" data-roll="-18" data-tilt="0.34"></canvas></div>
+      <div class="h-body h-jupiter" data-depth="0.26"><canvas data-sphere="jupiter" data-tex="512" data-spin="0.05" data-roll="-4"></canvas></div>
+      <div class="asteroid a1"><canvas data-rock="7" width="120" height="120"></canvas></div>
+      <div class="asteroid a2"><canvas data-rock="19" width="80" height="80"></canvas></div>
       <div class="ring" data-depth="0.18"></div>
       <svg class="ridge r1" data-depth="0.32" viewBox="0 0 1440 320" preserveAspectRatio="none"><path d="M0 230 L120 170 L210 200 L330 120 L420 175 L540 95 L660 180 L760 140 L880 205 L1010 110 L1120 170 L1240 125 L1340 185 L1440 150 V320 H0Z" /></svg>
       <svg class="ridge r2" data-depth="0.22" viewBox="0 0 1440 320" preserveAspectRatio="none"><path d="M0 250 L90 215 L200 245 L300 190 L410 235 L520 175 L640 230 L760 200 L860 250 L980 185 L1100 235 L1210 205 L1330 245 L1440 215 V320 H0Z" /></svg>
@@ -133,7 +125,7 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
             <p class="dim small-t" data-date>India Standard Time</p>
           </div>
           <div class="moon-wrap">
-            <svg class="moon" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" class="moon-dark" /><path data-moon d="" class="moon-lit" /></svg>
+            <canvas class="moon" data-sphere="moon" data-tex="512" data-moon-live aria-hidden="true"></canvas>
             <p class="dim small-t" data-moon-name>Tonight's moon</p>
           </div>
         </div>
@@ -183,6 +175,8 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
       </article>
     </div>
   </section>
+
+  <Gochar />
 
   <section class="section wrap" id="can">
     <div class="section-head" data-reveal>
@@ -280,6 +274,9 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
 </Base>
 
 <script>
+  import { moonPhase } from '../lib/astro.js';
+  import { mountAll } from '../lib/spheres.js';
+
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Parallax: scenery layers sink at their own depth as the hero scrolls away.
@@ -306,22 +303,41 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   };
   tick();
   setInterval(tick, 15_000);
+  // Tonight's moon, from the Sun-Moon elongation (src/lib/astro.js): drawn lit at its real phase.
   {
-    const SYN = 29.530588853;
-    const age = (((Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 864e5) % SYN + SYN) % SYN;
-    const phase = age / SYN; // 0 new, 0.5 full
-    const lit = (1 - Math.cos(2 * Math.PI * phase)) / 2;
+    const { phase, lit } = moonPhase();
     const names = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
-    const name = names[Math.round(phase * 8) % 8];
-    // Lit region: outer half-circle on the lit side, then an ellipse back for the terminator.
-    const r = 17, rx = Math.abs(r * Math.cos(2 * Math.PI * phase)).toFixed(2);
-    const waxing = phase < 0.5;
-    const outer = waxing ? 1 : 0;
-    // The terminator bulges toward the lit side for a crescent and away from it for a gibbous moon.
-    const inner = lit < 0.5 ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
-    document.querySelector('[data-moon]')!.setAttribute('d', `M20 3 A${r} ${r} 0 0 ${outer} 20 37 A${rx} ${r} 0 0 ${inner} 20 3Z`);
-    document.querySelector('[data-moon-name]')!.textContent = `${name}, ${Math.round(lit * 100)}% lit`;
+    document.querySelector('[data-moon-name]')!.textContent = `${names[Math.round(phase * 8) % 8]}, ${Math.round(lit * 100)}% lit`;
+    document.querySelectorAll<HTMLCanvasElement>('[data-moon-live]').forEach((c) => (c.dataset.phase = String(phase)));
+    mountAll();
   }
+
+  // Asteroids: an irregular lumpy rock, lit from the upper left, with a few craters. Drawn once;
+  // CSS drifts and tumbles it across the hero.
+  document.querySelectorAll<HTMLCanvasElement>('[data-rock]').forEach((c) => {
+    let seed = +c.dataset.rock!;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const g = c.getContext('2d')!, W = c.width, R = W * 0.36, n = 26;
+    const k = Array.from({ length: 5 }, () => [rnd() * 6.28, 0.04 + rnd() * 0.09, 1 + Math.floor(rnd() * 4)]);
+    g.translate(W / 2, W / 2);
+    g.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const r = R * (0.8 + k.reduce((s, [ph, amp, f]) => s + amp * Math.sin(a * f + ph), 0));
+      i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    g.closePath();
+    const fill = g.createRadialGradient(-R * 0.4, -R * 0.45, R * 0.1, 0, 0, R * 1.2);
+    fill.addColorStop(0, '#b7a593'); fill.addColorStop(0.45, '#6f6155'); fill.addColorStop(1, '#1d1a22');
+    g.fillStyle = fill; g.fill();
+    g.save(); g.clip();
+    for (let i = 0; i < 7; i++) {
+      const x = (rnd() - 0.5) * R * 1.4, y = (rnd() - 0.5) * R * 1.4, cr = R * (0.08 + rnd() * 0.16);
+      g.beginPath(); g.arc(x, y, cr, 0, Math.PI * 2); g.fillStyle = 'rgba(20,16,22,0.38)'; g.fill();
+      g.beginPath(); g.arc(x - cr * 0.18, y - cr * 0.18, cr, Math.PI * 0.9, Math.PI * 1.6); g.strokeStyle = 'rgba(230,214,196,0.28)'; g.lineWidth = 1.2; g.stroke();
+    }
+    g.restore();
+  });
 
   // Copy email.
   document.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
@@ -372,7 +388,18 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   .hero { position: relative; min-height: 100svh; margin-top: -76px; padding-top: 76px; display: grid; align-content: center; overflow: clip; }
   .scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
   .scene > * { position: absolute; will-change: transform; }
-  .planet { width: clamp(90px, 10vw, 150px); top: 7%; left: 38%; filter: drop-shadow(0 0 40px rgb(242 181 68 / 0.35)); }
+  .h-body canvas, .asteroid canvas { display: block; width: 100%; height: 100%; }
+  .h-moon { width: clamp(90px, 9vw, 130px); aspect-ratio: 1; top: 9%; left: 41%; filter: drop-shadow(0 0 34px rgb(255 241 201 / 0.28)); }
+  .h-saturn { width: clamp(150px, 14vw, 220px); aspect-ratio: 1; top: 11%; right: 0.5%; filter: drop-shadow(0 0 30px rgb(233 214 166 / 0.18)); }
+  .h-jupiter { width: clamp(70px, 6.5vw, 100px); aspect-ratio: 1; top: 66%; left: 2.5%; filter: drop-shadow(0 0 24px rgb(215 167 124 / 0.25)); }
+  .asteroid { width: 52px; aspect-ratio: 1; top: 0; left: 0; opacity: 0.9; offset-rotate: 0deg; }
+  .asteroid canvas { animation: tumble 19s linear infinite; }
+  .a1 { animation: drift-a 70s linear infinite; animation-delay: -12s; }
+  .a2 { width: 30px; animation: drift-b 95s linear infinite; animation-delay: -50s; opacity: 0.75; }
+  .a2 canvas { animation-duration: 13s; animation-direction: reverse; }
+  @keyframes tumble { to { rotate: 360deg; } }
+  @keyframes drift-a { from { translate: 108vw 6vh; } to { translate: -12vw 78vh; } }
+  @keyframes drift-b { from { translate: -10vw 30vh; } to { translate: 110vw 4vh; } }
   .ring {
     width: clamp(380px, 52vw, 760px); aspect-ratio: 1; right: -12%; top: -14%; border-radius: 50%;
     border: 1px dashed rgb(242 181 68 / 0.16);
@@ -452,9 +479,7 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   .now { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
   .clock { font: 600 clamp(2.4rem, 4.2vw, 3.4rem) / 1 var(--display); letter-spacing: -0.04em; }
   .moon-wrap { display: grid; justify-items: end; gap: 8px; text-align: right; }
-  .moon { width: 56px; height: 56px; filter: drop-shadow(0 0 14px rgb(255 241 201 / 0.35)); }
-  .moon-dark { fill: #1b2150; stroke: rgb(255 255 255 / 0.12); }
-  .moon-lit { fill: #fff1c9; }
+  .moon { width: 64px; height: 64px; filter: drop-shadow(0 0 14px rgb(255 241 201 / 0.3)); }
   .t-edu { grid-area: edu; }
   .t-cp { grid-area: cp; }
   .stat { font: 600 clamp(2.2rem, 3.6vw, 3rem) / 1 var(--display); color: var(--gold); letter-spacing: -0.04em; }
@@ -596,13 +621,16 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
 
   .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
 
+  @media (max-width: 1180px) {
+    .h-saturn, .h-jupiter { display: none; }
+  }
   @media (max-width: 1100px) {
     .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'self self' 'now now' 'edu cp' 'orbit orbit' 'rule rule' 'mail mail'; }
     .t-self { min-height: 0; }
   }
   @media (max-width: 960px) {
     .hero-in { grid-template-columns: 1fr; padding-top: 24px; }
-    .planet { left: auto; right: 8%; top: 9%; }
+    .h-moon { left: auto; right: 5%; top: 7%; width: 84px; }
     .caps { grid-template-columns: 1fr; }
     .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: auto; }
     .transits, .ask-card { grid-template-columns: 1fr; gap: 32px; }
@@ -617,6 +645,7 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
     .cap:last-child { grid-column: span 6; }
   }
   @media (max-width: 560px) {
+    .h-moon { top: 330px; right: 16px; width: 72px; }
     .bento { grid-template-columns: 1fr; grid-template-areas: 'self' 'now' 'edu' 'cp' 'orbit' 'rule' 'mail'; }
     .t-orbit { min-height: 0; }
     .planet-l b { font-size: 0.66rem; padding: 3px 7px; }

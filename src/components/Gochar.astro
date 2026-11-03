@@ -1,0 +1,294 @@
+---
+// Gochar: the nine grahas where they really are right now, on a sidereal zodiac wheel.
+// Positions are computed in the visitor's browser (src/lib/astro.js); this file only draws.
+import { SIGNS } from '../lib/astro.js';
+
+const C = 500, R_OUT = 490, R_IN = 398, R_TXT = 446;
+const ang = (lon) => Math.PI + (lon * Math.PI) / 180; // Mesha at 9 o'clock, signs run anticlockwise
+const at = (lon, r) => [C + r * Math.cos(ang(lon)), C - r * Math.sin(ang(lon))];
+const ticks = Array.from({ length: 72 }, (_, i) => i * 5);
+---
+<section class="section wrap gochar" id="sky" data-gochar>
+  <div class="section-head" data-reveal>
+    <p class="eyebrow">Gochar · today's sky</p>
+    <h2>Where the nine grahas are right now.</h2>
+    <p>Worked out live in your browser from orbital mechanics, in the sidereal zodiac with the Lahiri ayanamsa, the convention milanSathi follows. Accurate to about a tenth of a degree.</p>
+  </div>
+
+  <div class="sky-grid">
+    <div class="wheel" data-reveal>
+      <svg class="dial" viewBox="0 0 1000 1000" aria-hidden="true">
+        <defs>
+          <radialGradient id="dial-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0.55" stop-color="#6246be" stop-opacity="0" />
+            <stop offset="0.8" stop-color="#6246be" stop-opacity="0.16" />
+            <stop offset="1" stop-color="#f2b544" stop-opacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx={C} cy={C} r={R_OUT} fill="url(#dial-glow)" />
+        <g class="spin-ticks">
+          {ticks.map((d) => { const [x1, y1] = at(d, R_OUT + 4), [x2, y2] = at(d, R_OUT + (d % 30 ? 9 : 16)); return <line x1={x1} y1={y1} x2={x2} y2={y2} />; })}
+        </g>
+        <circle cx={C} cy={C} r={R_OUT} class="rim" />
+        <circle cx={C} cy={C} r={R_IN} class="rim" />
+        <circle cx={C} cy={C} r={300} class="orbit-l" />
+        <circle cx={C} cy={C} r={200} class="orbit-l" />
+        {SIGNS.map((_, i) => { const [x1, y1] = at(i * 30, R_IN), [x2, y2] = at(i * 30, R_OUT); return <line x1={x1} y1={y1} x2={x2} y2={y2} class="cusp" />; })}
+        {Array.from({ length: 360 / 5 }, (_, i) => { const d = i * 5, [x1, y1] = at(d, R_IN), [x2, y2] = at(d, R_IN + (d % 10 ? 6 : 11)); return <line x1={x1} y1={y1} x2={x2} y2={y2} class="deg" />; })}
+        {SIGNS.map((s, i) => {
+          const [x, y] = at(i * 30 + 15, R_TXT);
+          return (
+            <g class="sign" data-sign={i}>
+              <text x={x} y={y - 6} class="glyph">{s.glyph}</text>
+              <text x={x} y={y + 24} class="sname">{s.sa}</text>
+            </g>
+          );
+        })}
+        <g data-pointers></g>
+      </svg>
+      <div class="bodies" data-bodies></div>
+      <div class="earth" title="Earth: you are here">
+        <canvas data-sphere="earth" data-spin="0.03" data-roll="-23" data-tex="128" aria-hidden="true"></canvas>
+      </div>
+      <p class="tip" role="status" data-tip hidden></p>
+    </div>
+
+    <div class="table-wrap" data-reveal>
+      <p class="asof dim" data-asof>Computing…</p>
+      <table class="grahas">
+        <thead><tr><th scope="col">Graha</th><th scope="col">Sign</th><th scope="col" class="r">Degree</th></tr></thead>
+        <tbody data-rows></tbody>
+      </table>
+      <p class="note dim">R = retrograde (appears to move backwards). Rahu and Ketu, the Moon's nodes, always do. Checked against PyEphem across 2018–2035.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { gochar, moonPhase } from '../lib/astro.js';
+  import { mountAll } from '../lib/spheres.js';
+
+  const root = document.querySelector<HTMLElement>('[data-gochar]')!;
+  const bodies = root.querySelector<HTMLElement>('[data-bodies]')!;
+  const rows = root.querySelector<HTMLElement>('[data-rows]')!;
+  const tip = root.querySelector<HTMLElement>('[data-tip]')!;
+  const pointers = root.querySelector('[data-pointers]')!;
+  const asof = root.querySelector('[data-asof]')!;
+
+  // Diameter of each body as a share of the wheel's width (Saturn's canvas is wider for its rings).
+  const SIZE: Record<string, number> = { sun: 0.1, moon: 0.085, jupiter: 0.088, saturn: 0.07, venus: 0.064, mars: 0.056, mercury: 0.05, rahu: 0.052, ketu: 0.046 };
+  const SPIN: Record<string, number> = { sun: 0.01, jupiter: 0.06, saturn: 0.045, venus: 0.004, mars: 0.025, mercury: 0.008 };
+  const LEVELS = [0.33, 0.255, 0.18]; // orbit radius as a share of width; inner levels absorb crowding
+  const pos = (lon: number, r: number) => {
+    const a = Math.PI + (lon * Math.PI) / 180;
+    return [0.5 + r * Math.cos(a), 0.5 - r * Math.sin(a)];
+  };
+  const dms = (deg: number) => `${Math.floor(deg)}°${String(Math.floor((deg % 1) * 60)).padStart(2, '0')}′`;
+  const label = (g: any) => `${g.sa} (${g.en}) in ${g.signInfo.sa}, ${g.signInfo.en}, ${dms(g.deg)}${g.retro ? ', retrograde' : ''}`;
+
+  // Each body goes on the outermost orbit where it doesn't touch one already placed, nudged up
+  // to 18° along its orbit if it must; the hairline still marks its exact degree.
+  function place(list: any[]) {
+    const placed: { x: number; y: number; s: number }[] = [];
+    const NUDGE = [0, 6, -6, 12, -12, 18, -18];
+    return [...list].sort((a, b) => SIZE[b.id] - SIZE[a.id]).map((g) => {
+      const s = SIZE[g.id] * (g.id === 'saturn' ? 1.7 : 1);
+      let best: [number, number, number] | null = null, bestGap = -Infinity;
+      search: for (const r of LEVELS) for (const dn of NUDGE) {
+        const [x, y] = pos(g.lon + dn, r);
+        const gap = Math.min(1, ...placed.map((p) => Math.hypot(p.x - x, p.y - y) - (p.s + s) / 2));
+        if (gap > 0.012) { best = [x, y, r]; break search; }
+        if (gap > bestGap) { bestGap = gap; best = [x, y, r]; }
+      }
+      const [x, y, r] = best!;
+      placed.push({ x, y, s });
+      return { ...g, x, y, r };
+    });
+  }
+
+  let current = '';
+  function render() {
+    const now = new Date();
+    const list = place(gochar(now));
+    const { phase } = moonPhase(now);
+    asof.textContent = `As of ${now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })} IST`;
+
+    // Rebuild the bodies only when something moved enough to see (positions change slowly).
+    const key = list.map((g) => `${g.id}:${g.lon.toFixed(1)}:${g.r}`).join('|');
+    const order = ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu'];
+    rows.innerHTML = '';
+    order.forEach((id) => {
+      const g = list.find((x) => x.id === id);
+      const tr = document.createElement('tr');
+      tr.dataset.id = id;
+      tr.innerHTML = `<th scope="row"><i class="dot ${id}"></i>${g.sa} <span class="dim">${g.en}</span></th>
+        <td>${g.signInfo.glyph} ${g.signInfo.sa} <span class="dim">${g.signInfo.en}</span></td>
+        <td class="r num">${dms(g.deg)}${g.retro ? ' <b class="retro">R</b>' : ''}</td>`;
+      rows.append(tr);
+    });
+    if (key === current) return;
+    current = key;
+
+    bodies.querySelectorAll('canvas').forEach((c: any) => c.__sphere?.destroy());
+    bodies.innerHTML = '';
+    pointers.innerHTML = '';
+    for (const g of list) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `body b-${g.id}`;
+      b.dataset.id = g.id;
+      b.style.left = `${g.x * 100}%`;
+      b.style.top = `${g.y * 100}%`;
+      b.style.setProperty('--s', String(SIZE[g.id]));
+      b.style.setProperty('--fd', `${(g.lon % 7) * 0.6}s`);
+      b.setAttribute('aria-label', label(g));
+      if (g.id === 'rahu' || g.id === 'ketu') {
+        b.innerHTML = '<span class="node"></span>';
+      } else {
+        const c = document.createElement('canvas');
+        c.dataset.sphere = g.id;
+        c.dataset.tex = g.id === 'jupiter' || g.id === 'saturn' ? '256' : '128';
+        if (SPIN[g.id]) c.dataset.spin = String(SPIN[g.id]);
+        if (g.id === 'moon') c.dataset.phase = String(phase);
+        if (g.id === 'saturn') { c.dataset.roll = '-16'; c.dataset.tilt = '0.32'; }
+        if (g.id === 'jupiter') c.dataset.roll = '-3';
+        c.setAttribute('aria-hidden', 'true');
+        b.append(c);
+      }
+      if (g.retro && g.id !== 'rahu' && g.id !== 'ketu') b.insertAdjacentHTML('beforeend', '<i class="rflag" aria-hidden="true">R</i>');
+      bodies.append(b);
+
+      // A hairline from each body to its exact degree on the zodiac band.
+      const [ex, ey] = pos(g.lon, 0.398).map((v) => v * 1000);
+      const ns = 'http://www.w3.org/2000/svg';
+      const ln = document.createElementNS(ns, 'line');
+      ln.setAttribute('x1', String(g.x * 1000)); ln.setAttribute('y1', String(g.y * 1000));
+      ln.setAttribute('x2', String(ex)); ln.setAttribute('y2', String(ey));
+      ln.setAttribute('class', `ptr p-${g.id}`);
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', String(ex)); dot.setAttribute('cy', String(ey)); dot.setAttribute('r', '5');
+      dot.setAttribute('class', `ptr-dot p-${g.id}`);
+      pointers.append(ln, dot);
+    }
+    root.querySelectorAll('.sign').forEach((s) => s.classList.toggle('lit', list.some((g) => g.sign === +(s as HTMLElement).dataset.sign!)));
+    mountAll(bodies);
+  }
+
+  function focus(id: string | null, g?: any) {
+    root.querySelectorAll('[data-id]').forEach((el) => el.classList.toggle('on', (el as HTMLElement).dataset.id === id));
+    root.querySelectorAll('.ptr, .ptr-dot').forEach((el) => el.classList.toggle('on', !!id && el.classList.contains(`p-${id}`)));
+    if (!id) { tip.hidden = true; return; }
+    tip.textContent = g ? label(g) : '';
+    tip.hidden = !g;
+  }
+  const byId = () => Object.fromEntries(gochar(new Date()).map((g) => [g.id, g]));
+  root.addEventListener('pointerover', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
+    if (el) focus(el.dataset.id!, byId()[el.dataset.id!]);
+  });
+  root.addEventListener('pointerleave', () => focus(null));
+  root.addEventListener('focusin', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
+    if (el) focus(el.dataset.id!, byId()[el.dataset.id!]);
+  });
+  root.addEventListener('click', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('.body');
+    if (el) focus(el.dataset.id!, byId()[el.dataset.id!]);
+  });
+
+  render();
+  setInterval(render, 60_000);
+  mountAll(root);
+</script>
+
+<style>
+  .sky-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+  .wheel { position: relative; width: min(100%, 620px); aspect-ratio: 1; margin-inline: auto; container-type: inline-size; }
+  .dial { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .rim { fill: none; stroke: rgb(242 181 68 / 0.55); stroke-width: 1.6; }
+  .orbit-l { fill: none; stroke: rgb(45 52 112 / 0.9); stroke-width: 1.2; stroke-dasharray: 3 7; }
+  .cusp { stroke: rgb(242 181 68 / 0.4); stroke-width: 1.4; }
+  .deg { stroke: rgb(162 164 204 / 0.35); stroke-width: 1; }
+  .spin-ticks { transform-origin: 500px 500px; animation: dial-spin 240s linear infinite; }
+  .spin-ticks line { stroke: rgb(162 164 204 / 0.35); stroke-width: 1.2; }
+  @keyframes dial-spin { to { transform: rotate(360deg); } }
+  .sign text { text-anchor: middle; dominant-baseline: middle; transition: fill 0.3s; }
+  .glyph { font: 400 34px/1 'Segoe UI Symbol', 'Noto Sans Symbols', 'DejaVu Sans', sans-serif; fill: rgb(242 181 68 / 0.6); }
+  .sname { font: 600 17px var(--body); fill: var(--dim); letter-spacing: 0.02em; }
+  .sign.lit .glyph { fill: var(--gold); }
+  .sign.lit .sname { fill: var(--text); }
+  :global(.ptr) { stroke: rgb(242 181 68 / 0.28); stroke-width: 1.2; stroke-dasharray: 2 4; transition: stroke 0.25s; }
+  :global(.ptr-dot) { fill: var(--gold); opacity: 0.75; }
+  :global(.ptr.on) { stroke: var(--gold); stroke-dasharray: none; stroke-width: 2; }
+  :global(.ptr-dot.on) { opacity: 1; r: 8; }
+
+  .bodies { position: absolute; inset: 0; }
+  .bodies :global(.body) {
+    position: absolute; translate: -50% -50%; width: calc(var(--s) * 100cqw); aspect-ratio: 1; padding: 0;
+    background: none; border: 0; cursor: pointer; border-radius: 50%;
+    animation: bob 7s ease-in-out infinite; animation-delay: calc(var(--fd) * -1);
+  }
+  .bodies :global(.body canvas) { width: 100%; height: 100%; display: block; }
+  .bodies :global(.b-saturn canvas) { width: 234%; height: 234%; margin: -67%; }
+  .bodies :global(.b-sun) { filter: drop-shadow(0 0 12px rgb(255 170 60 / 0.9)) drop-shadow(0 0 28px rgb(255 140 40 / 0.5)); }
+  .bodies :global(.b-moon) { filter: drop-shadow(0 0 10px rgb(255 241 201 / 0.35)); }
+  .bodies :global(.body:hover), .bodies :global(.body.on), .bodies :global(.body:focus-visible) { scale: 1.18; z-index: 2; }
+  .bodies :global(.body:focus-visible) { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .bodies :global(.body) { transition: scale 0.3s cubic-bezier(.3,1.5,.5,1); }
+  .bodies :global(.node) {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #04050d 55%, rgb(242 181 68 / 0.9) 62%, rgb(242 120 40 / 0.35) 72%, transparent 76%);
+    box-shadow: 0 0 18px 2px rgb(242 150 60 / 0.35);
+  }
+  .bodies :global(.b-ketu .node) { background: radial-gradient(circle at 50% 50%, #04050d 55%, rgb(111 211 197 / 0.85) 62%, rgb(111 211 197 / 0.3) 72%, transparent 76%); box-shadow: 0 0 18px 2px rgb(111 211 197 / 0.3); }
+  .bodies :global(.b-ketu .node::after) {
+    content: ''; position: absolute; left: 70%; top: 44%; width: 140%; height: 12%; border-radius: 999px;
+    background: linear-gradient(90deg, rgb(111 211 197 / 0.55), transparent); transform-origin: left center; rotate: -20deg;
+  }
+  .bodies :global(.rflag) {
+    position: absolute; right: -14%; top: -14%; font: 700 clamp(8px, 1.6cqw, 11px)/1 var(--body); font-style: normal;
+    color: var(--night); background: var(--teal); border-radius: 999px; padding: 2px 4px;
+  }
+  @keyframes bob { 50% { transform: translateY(-4px); } }
+
+  .earth { position: absolute; left: 50%; top: 50%; width: 13%; aspect-ratio: 1; translate: -50% -50%; filter: drop-shadow(0 0 14px rgb(80 150 255 / 0.45)); }
+  .earth canvas { width: 100%; height: 100%; display: block; }
+  .tip {
+    position: absolute; left: 50%; bottom: -6px; translate: -50% 100%; width: max-content; max-width: 100%;
+    font-size: 0.85rem; color: var(--text); background: var(--night-3); border: 1px solid var(--gold);
+    border-radius: 999px; padding: 6px 14px; text-align: center;
+  }
+
+  .table-wrap { display: grid; gap: 14px; }
+  .asof { font-size: 0.88rem; }
+  .grahas { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  .grahas :global(th), .grahas :global(td) { text-align: left; padding: 11px 8px; border-bottom: 1px solid rgb(45 52 112 / 0.8); font-weight: 500; }
+  .grahas thead th { color: var(--gold); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 650; }
+  .grahas :global(tbody th) { font-weight: 650; white-space: nowrap; }
+  .grahas :global(.r) { text-align: right; white-space: nowrap; }
+  .grahas :global(.dim) { font-weight: 400; font-size: 0.85em; }
+  .grahas :global(tr) { transition: background-color 0.2s; }
+  .grahas :global(tr.on) { background: rgb(242 181 68 / 0.08); }
+  .grahas :global(.retro) { color: var(--teal); font-size: 0.8em; margin-left: 4px; }
+  .grahas :global(.dot) { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; vertical-align: 0; }
+  .grahas :global(.dot.sun) { background: #ffb341; } .grahas :global(.dot.moon) { background: #e8e4da; }
+  .grahas :global(.dot.mars) { background: #c4552f; } .grahas :global(.dot.mercury) { background: #a8a29a; }
+  .grahas :global(.dot.jupiter) { background: #d7a77c; } .grahas :global(.dot.venus) { background: #f0dcaa; }
+  .grahas :global(.dot.saturn) { background: #d9bd83; } .grahas :global(.dot.rahu) { background: #04050d; box-shadow: 0 0 0 2px #f2a03c; }
+  .grahas :global(.dot.ketu) { background: #04050d; box-shadow: 0 0 0 2px var(--teal); }
+  .note { font-size: 0.8rem; }
+
+  @container (max-width: 420px) {
+    .sname { display: none; }
+    .glyph { font-size: 44px; }
+  }
+  @media (max-width: 960px) {
+    .sky-grid { grid-template-columns: 1fr; }
+    .tip { position: static; translate: none; margin: 18px auto 0; }
+  }
+  @media (max-width: 560px) {
+    .grahas { font-size: 0.85rem; }
+    .grahas :global(th), .grahas :global(td) { padding: 9px 4px; }
+    .grahas :global(.dim) { display: none; }
+  }
+</style>

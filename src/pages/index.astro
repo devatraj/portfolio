@@ -92,8 +92,16 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
         <p class="sub" data-reveal>I turn expensive vendors, slow AI features and fragile backends into systems your team owns, and I prove they work before anything switches over.</p>
         <div class="ctas" data-reveal>
           <a class="btn solid" href="#can">See what I can do</a>
-          <button type="button" class="btn ask-btn" data-ask-open>Ask the stars about me</button>
+          <a class="btn" href={`mailto:${p.email}`}>Email me</a>
+          <a class="btn" href={p.links.linkedin} rel="me noopener" target="_blank">
+            <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 21 11.2 21 14.5V21h-4v-5.8c0-1.4-.03-3.2-1.95-3.2-1.95 0-2.25 1.52-2.25 3.1V21H9z"/></svg>
+            LinkedIn
+          </a>
         </div>
+        <button type="button" class="ask-link-hero" data-ask-open>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z" fill="currentColor" /></svg>
+          Or ask the stars about me
+        </button>
       </div>
       <Kundli />
     </div>
@@ -481,8 +489,14 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   @keyframes shimmer { 50% { background-position: 100% 0; } }
   .sub { color: var(--dim); font-size: 1.12rem; margin-top: 24px; max-width: 33rem; line-height: 1.6; }
   .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
-  .ask-btn { font: inherit; font-weight: 650; cursor: pointer; background: rgb(15 19 48 / 0.5); color: var(--teal); border-color: rgb(111 211 197 / 0.45); }
-  .ask-btn:hover { color: var(--night); background: var(--teal); border-color: var(--teal); }
+  .li { width: 17px; height: 17px; }
+  .ask-link-hero {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; padding: 4px 0;
+    font: inherit; font-weight: 650; font-size: 0.95rem; color: var(--teal); background: none; border: 0; cursor: pointer;
+    text-decoration: underline; text-decoration-color: rgb(111 211 197 / 0.4); text-underline-offset: 0.25em;
+  }
+  .ask-link-hero:hover { text-decoration-color: var(--teal); }
+  .ask-link-hero svg { width: 16px; height: 16px; }
   .cue { position: absolute; left: 50%; bottom: 28px; translate: -50% 0; width: 26px; height: 42px; border: 1.5px solid var(--line); border-radius: 999px; }
   .cue span { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--gold); animation: cue 1.8s ease-in-out infinite; }
   @keyframes cue { 60% { transform: translateY(14px); opacity: 0; } 61% { transform: none; opacity: 0; } }

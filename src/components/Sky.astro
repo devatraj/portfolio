@@ -1,0 +1,108 @@
+---
+// Site-wide night sky behind every page: a nebula wash, a canvas of stars that drift,
+// twinkle and lean toward the pointer, and the odd shooting star. Pure CSS + one canvas.
+---
+<div class="sky" aria-hidden="true">
+  <div class="nebula"></div>
+  <canvas data-sky></canvas>
+</div>
+
+<script is:inline>
+  (() => {
+    const canvas = document.querySelector('[data-sky]');
+    const ctx = canvas.getContext('2d');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const TINTS = ['255,255,255', '255,255,255', '255,236,200', '200,236,232'];
+    let w = 0, h = 0, stars = [], streak = null, next = 0;
+    let mx = 0, my = 0, px = 0, py = 0;
+
+    function seed() {
+      w = innerWidth; h = innerHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round(Math.min(160, (w * h) / 9000));
+      stars = Array.from({ length: n }, () => {
+        const z = Math.random();
+        return {
+          x: Math.random() * w, y: Math.random() * h, z,
+          r: 0.4 + z * 1.2,
+          a: 0.25 + Math.random() * 0.6,
+          tw: Math.random() * Math.PI * 2, ts: 0.6 + Math.random() * 1.6,
+          vx: (Math.random() - 0.5) * 0.04, vy: (Math.random() - 0.5) * 0.04,
+          c: TINTS[(Math.random() * TINTS.length) | 0],
+        };
+      });
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, w, h);
+      // Ease the pointer so the sky leans instead of jumping.
+      px += (mx - px) * 0.05; py += (my - py) * 0.05;
+      const scroll = scrollY;
+      for (const s of stars) {
+        s.x = (s.x + s.vx + w) % w; s.y = (s.y + s.vy + h) % h;
+        const depth = 0.2 + s.z;
+        const x = s.x + px * depth * 18;
+        const y = ((s.y - scroll * depth * 0.08) % h + h) % h + py * depth * 18;
+        const a = reduce ? s.a : s.a * (0.65 + 0.35 * Math.sin(t / 1000 * s.ts + s.tw));
+        ctx.beginPath();
+        ctx.arc(x, y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${s.c},${a})`;
+        ctx.fill();
+      }
+      if (streak) {
+        const p = (t - streak.t0) / streak.d;
+        if (p >= 1) streak = null;
+        else {
+          const x = streak.x + streak.dx * p, y = streak.y + streak.dy * p;
+          const g = ctx.createLinearGradient(x, y, x - streak.dx * 0.18, y - streak.dy * 0.18);
+          g.addColorStop(0, `rgba(255,240,210,${0.9 * Math.sin(p * Math.PI)})`);
+          g.addColorStop(1, 'rgba(255,240,210,0)');
+          ctx.strokeStyle = g; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - streak.dx * 0.18, y - streak.dy * 0.18); ctx.stroke();
+        }
+      } else if (t > next) {
+        const fromLeft = Math.random() < 0.5;
+        streak = {
+          t0: t, d: 900 + Math.random() * 500,
+          x: fromLeft ? Math.random() * w * 0.5 : w * (0.5 + Math.random() * 0.5), y: Math.random() * h * 0.4,
+          dx: (fromLeft ? 1 : -1) * (260 + Math.random() * 220), dy: 120 + Math.random() * 120,
+        };
+        next = t + 6000 + Math.random() * 9000;
+      }
+    }
+
+    let raf = 0;
+    const loop = (t) => { draw(t); raf = requestAnimationFrame(loop); };
+    function start() { cancelAnimationFrame(raf); if (reduce) draw(0); else raf = requestAnimationFrame(loop); }
+
+    seed();
+    next = performance.now() + 2500;
+    start();
+    let rt = 0;
+    addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { seed(); if (reduce) draw(0); }, 150); });
+    if (!reduce) {
+      addEventListener('pointermove', (e) => { mx = e.clientX / w - 0.5; my = e.clientY / h - 0.5; }, { passive: true });
+      document.addEventListener('visibilitychange', () => (document.hidden ? cancelAnimationFrame(raf) : start()));
+    } else {
+      addEventListener('scroll', () => draw(0), { passive: true });
+    }
+  })();
+</script>
+
+<style>
+  .sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .nebula {
+    position: absolute; inset: -10%;
+    background:
+      radial-gradient(42% 36% at 78% 18%, rgb(98 70 190 / 0.32), transparent 70%),
+      radial-gradient(36% 30% at 12% 72%, rgb(111 211 197 / 0.08), transparent 70%),
+      radial-gradient(30% 26% at 58% 92%, rgb(242 181 68 / 0.07), transparent 70%),
+      linear-gradient(to bottom, #0c1029, var(--night) 40%, #0d1130);
+    animation: breathe 26s ease-in-out infinite alternate;
+  }
+  @keyframes breathe { to { transform: translate3d(-2%, 1.5%, 0) scale(1.04); } }
+  canvas { position: absolute; inset: 0; }
+</style>

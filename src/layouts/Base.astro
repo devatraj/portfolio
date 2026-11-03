@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import Sky from '../components/Sky.astro';
+import AskStars from '../components/AskStars.astro';
 import { profile } from '../lib/profile.js';
 
 const { title, description, page = '', cap } = Astro.props;
@@ -28,11 +30,14 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={new URL('/og.png', Astro.site)} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body data-page={page} data-cap={cap}>
     <a class="skip" href="#main">Skip to content</a>
-    <header class="bar">
-      <div class="wrap bar-in">
+    <Sky />
+    <div class="progress" data-progress aria-hidden="true"></div>
+    <header class="bar" data-bar>
+      <div class="bar-in">
         <a class="mark" href="/" aria-label={`${p.name}, home`}>
           <svg viewBox="0 0 40 40" aria-hidden="true">
             <rect x="1" y="1" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2" />
@@ -42,9 +47,11 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
         </a>
 
         <nav class="links" aria-label="Main">
+          <a href="/#chart">Chart</a>
           <a href="/#can" aria-current={page === 'can' ? 'page' : undefined}>What I do</a>
           <a href="/work/" aria-current={here('/work/')}>Work</a>
           <a href="/about/" aria-current={here('/about/')}>About</a>
+          <button type="button" class="ask-link" data-ask-open>Ask the stars</button>
         </nav>
 
         <div class="right">
@@ -57,14 +64,14 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
           <button type="button" class="menu-btn" aria-expanded="false" aria-controls="sheet" data-menu>Menu</button>
         </div>
       </div>
-      <div class="progress" data-progress aria-hidden="true"></div>
       <div class="sheet" id="sheet" hidden data-sheet>
-        <nav class="wrap" aria-label="Mobile">
+        <nav aria-label="Mobile">
           <p class="sheet-h">What I do</p>
           {caps.map((c) => <a href={`/can/${c.slug}/`}>{c.title}</a>)}
           <p class="sheet-h">More</p>
           <a href="/work/">All work</a>
           <a href="/about/">About me</a>
+          <button type="button" class="ask-link" data-ask-open>Ask the stars</button>
           <a href={`mailto:${p.email}`}>Email me</a>
           {p.phone && <a href={`tel:${p.phone.replace(/\s/g, '')}`}>Call {p.phone}</a>}
         </nav>
@@ -104,39 +111,52 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
       </div>
     </footer>
 
+    <AskStars />
+
     <script>
       import '../scripts/fx.js';
     </script>
 
     <style>
       .bar {
-        position: sticky; top: 0; z-index: 30;
-        background: rgb(15 19 48 / 0.78);
-        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid rgb(45 52 112 / 0.6);
+        position: sticky; top: 14px; z-index: 30;
+        width: min(calc(100% - 2 * var(--gutter)), 1040px); margin: 14px auto 0;
+        background: rgb(15 19 48 / 0.62);
+        backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3);
+        border: 1px solid rgb(45 52 112 / 0.75); border-radius: 999px;
+        box-shadow: 0 18px 50px -24px rgb(0 0 0 / 0.8);
+        transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
       }
-      .bar-in { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 72px; }
+      .bar.scrolled { background: rgb(15 19 48 / 0.92); border-color: rgb(242 181 68 / 0.28); }
+      .bar:has(.sheet:not([hidden])) { border-radius: 26px; }
+      .bar-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 60px; padding-inline: 22px 10px; }
       .mark { display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 700; }
-      .mark svg { width: 26px; height: 26px; color: var(--gold); flex: none; }
-      .links { display: flex; gap: 32px; font-size: 0.95rem; }
-      .links a { text-decoration: none; color: var(--dim); padding-block: 6px; border-bottom: 2px solid transparent; }
-      .links a:hover { color: var(--text); }
-      .links a[aria-current='page'] { color: var(--text); border-bottom-color: var(--gold); }
-      .right { display: flex; align-items: center; gap: 18px; }
+      .mark svg { width: 24px; height: 24px; color: var(--gold); flex: none; transition: transform 0.6s cubic-bezier(.3,1.4,.5,1); }
+      .mark:hover svg { transform: rotate(90deg); }
+      .links { display: flex; gap: 4px; font-size: 0.92rem; }
+      .links a, .ask-link {
+        text-decoration: none; color: var(--dim); padding: 8px 14px; border-radius: 999px;
+        transition: color 0.2s, background-color 0.2s;
+      }
+      .links a:hover, .ask-link:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+      .links a[aria-current='page'] { color: var(--night); background: var(--gold); }
+      .ask-link { font: inherit; background: none; border: 0; cursor: pointer; color: var(--teal); }
+      .links .ask-link { font-size: 0.92rem; }
+      .right { display: flex; align-items: center; gap: 14px; }
       .passport { display: flex; gap: 5px; text-decoration: none; padding: 8px 4px; }
       .passport i { width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid var(--line); transition: background-color 0.4s, border-color 0.4s, transform 0.4s; }
       .passport i.lit { background: var(--gold); border-color: var(--gold); }
       .passport i.new { transform: rotate(45deg) scale(1.6); }
       .small { padding: 9px 18px; font-size: 0.88rem; }
       .menu-btn { display: none; font: inherit; font-weight: 650; color: var(--text); background: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
-      .progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; }
-      .sheet { border-top: 1px solid var(--line); background: var(--night); max-height: calc(100dvh - 72px); overflow-y: auto; }
-      .sheet nav { display: grid; gap: 4px; padding-block: 20px 32px; }
-      .sheet a { text-decoration: none; font-size: 1.15rem; padding: 10px 0; }
+      .progress { position: fixed; z-index: 31; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, var(--teal), var(--gold)); transform: scaleX(0); transform-origin: left; }
+      .sheet { border-top: 1px solid var(--line); max-height: calc(100dvh - 110px); overflow-y: auto; }
+      .sheet nav { display: grid; gap: 4px; padding: 12px 24px 28px; }
+      .sheet a, .sheet .ask-link { text-decoration: none; font-size: 1.15rem; padding: 10px 0; text-align: left; }
       .sheet-h { color: var(--gold); font-size: 0.85rem; font-weight: 650; margin-top: 16px; }
       .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
-      .foot { margin-top: var(--space-section); border-top: 1px solid var(--line); background: linear-gradient(to bottom, var(--night-2), var(--night)); }
+      .foot { margin-top: var(--space-section); border-top: 1px solid var(--line); background: linear-gradient(to bottom, rgb(22 27 64 / 0.75), rgb(15 19 48 / 0.92)); }
       .foot-in { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 56px; padding-block: 96px 56px; }
       .talk { display: grid; gap: 18px; align-content: start; }
       .talk h2 { font-size: clamp(2rem, 5.2vw, 3.5rem); letter-spacing: -0.04em; }
@@ -152,7 +172,7 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
       .fine { font-size: 0.85rem; padding-bottom: 48px; }
 
       .toast {
-        position: fixed; z-index: 40; right: 20px; bottom: 20px; max-width: 360px;
+        position: fixed; z-index: 40; right: 20px; bottom: 84px; max-width: 360px;
         background: var(--night-3); border: 1px solid var(--gold); border-radius: 18px; padding: 18px 44px 18px 20px;
         display: grid; gap: 12px; justify-items: start; box-shadow: 0 20px 60px -20px #000;
         animation: rise 0.5s cubic-bezier(.2,.9,.3,1.2);
@@ -160,10 +180,15 @@ const here = (path) => (Astro.url.pathname.startsWith(path) ? 'page' : undefined
       .x { position: absolute; top: 8px; right: 10px; font-size: 1.4rem; line-height: 1; color: var(--dim); background: none; border: 0; cursor: pointer; padding: 4px 8px; }
       @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
 
+      @media (max-width: 1100px) {
+        .passport { display: none; }
+        .links a, .ask-link { padding-inline: 10px; }
+      }
       @media (max-width: 880px) {
         .links, .right .btn { display: none; }
         .menu-btn { display: inline-block; }
-        .bar-in { height: 64px; }
+        .bar { top: 10px; margin-top: 10px; border-radius: 22px; }
+        .bar-in { height: 56px; padding-inline: 18px 8px; }
         .mark span { font-size: 0.95rem; }
         .foot-in { grid-template-columns: 1fr; padding-block: 72px 40px; gap: 48px; }
       }

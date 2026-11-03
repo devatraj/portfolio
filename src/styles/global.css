@@ -54,7 +54,7 @@ h2 { font-weight: 600; font-size: clamp(1.55rem, 3.5vw, 2.3rem); }
 h3 { font-weight: 550; font-size: 1.15rem; }
 
 /* Anchored sections land below the sticky header and tab rows. */
-[id] { scroll-margin-top: 150px; }
+[id] { scroll-margin-top: 110px; }
 p { margin: 0; }
 
 .wrap { max-width: var(--wide); margin-inline: auto; padding-inline: var(--gutter); }
@@ -74,7 +74,12 @@ p { margin: 0; }
 .section { padding-top: var(--space-section); }
 .section-head { display: grid; gap: 18px; margin-bottom: var(--space-block); max-width: 44rem; }
 .section-head p { color: var(--dim); font-size: 1.12rem; }
-.eyebrow { color: var(--gold); font-weight: 650; font-size: 0.92rem; }
+.eyebrow, .section-head .eyebrow { color: var(--gold); font-weight: 650; font-size: 0.92rem; }
+
+/* Reveal on scroll (fx.js). Only hidden once JS has said it will reveal them. */
+.js [data-reveal]:not(.in) { opacity: 0; transform: translateY(26px); }
+.js [data-reveal] { transition: opacity 0.7s cubic-bezier(.2,.7,.2,1) var(--rd, 0ms), transform 0.7s cubic-bezier(.2,.7,.2,1) var(--rd, 0ms), border-color 0.25s, background-color 0.35s; }
+.js [data-reveal].in:hover { transition-delay: 0ms; }
 
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.35s; }

@@ -113,18 +113,19 @@ const TABS = [['experience', 'Experience'], ['education', 'Education'], ['path',
 </script>
 
 <style>
+  section[id] { scroll-margin-top: 170px; }
   .top { padding-top: clamp(64px, 10vw, 128px); display: grid; gap: 28px; }
   h1 { font-size: clamp(2.3rem, 6vw, 4.2rem); letter-spacing: -0.04em; }
   .lead { font-size: clamp(1.1rem, 2vw, 1.3rem); max-width: 44rem; line-height: 1.6; }
   .jump {
-    position: sticky; top: 72px; z-index: 10; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    position: sticky; top: 84px; z-index: 10; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
     padding-block: 14px; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter);
-    background: rgb(15 19 48 / 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: rgb(15 19 48 / 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
   .jump a { flex: none; text-decoration: none; padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--dim); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
   .jump a:hover { color: var(--text); border-color: var(--gold); }
   .jump a[data-on] { background: var(--gold); border-color: var(--gold); color: var(--night); }
-  @media (max-width: 880px) { .jump { top: 64px; } }
+  @media (max-width: 880px) { .jump { top: 72px; } }
 
   .role { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr); gap: 56px; padding-block: 48px; border-top: 1px solid var(--line); }
   .role header { display: grid; gap: 6px; align-content: start; }

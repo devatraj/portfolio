@@ -34,7 +34,7 @@ const CASE = { milansathi: '/work/milansathi/' };
   <section class="wrap">
     <ul class="grid" data-grid>
       {items.map((f) => (
-        <li class="item" data-kind={f.kind.join(' ')}>
+        <li class="item" id={f.id} data-kind={f.kind.join(' ')}>
           <details>
             <summary>
               <span class="org">{orgLabel(f)}{f.credit === 'Contributed' && ', team project'}</span>
@@ -75,6 +75,12 @@ const CASE = { milansathi: '/work/milansathi/' };
       });
       showing.textContent = k === 'all' ? `Showing all ${n}` : `Showing ${n} of ${items.length}`;
     }));
+    // Links like /work/#semantic-cache (from the home page) open that project.
+    const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target?.matches('.item')) {
+      target.querySelector('details').open = true;
+      target.scrollIntoView({ block: 'center' });
+    }
   })();
 </script>
 
@@ -94,7 +100,7 @@ const CASE = { milansathi: '/work/milansathi/' };
   .showing { font-size: 0.88rem; }
 
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 24px; align-items: start; }
-  details { border: 1px solid var(--line); border-radius: 18px; background: var(--night-2); transition: border-color 0.25s; }
+  details { border: 1px solid var(--line); border-radius: 18px; background: rgb(22 27 64 / 0.78); backdrop-filter: blur(6px); transition: border-color 0.25s; }
   details:hover, details[open] { border-color: var(--gold); }
   summary { list-style: none; cursor: pointer; padding: 26px 56px 26px 26px; display: grid; gap: 10px; position: relative; }
   summary::-webkit-details-marker { display: none; }

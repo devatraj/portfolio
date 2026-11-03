@@ -1,0 +1,199 @@
+---
+// "Ask the stars": a floating launcher and chat panel on every page. Answers come from
+// /api/ask (Gemini, grounded in profile.yaml); if that's unreachable (astro dev, offline,
+// errors) the same facts are searched in the browser instead.
+import { profile } from '../lib/profile.js';
+
+const SUGGEST = [
+  'What has he built with LLMs?',
+  'How much money has he saved companies?',
+  'Where did he study?',
+  'Is he open to relocating?',
+];
+---
+<button type="button" class="ask-fab" data-ask-open aria-controls="ask-panel" aria-expanded="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z" fill="currentColor" /><circle cx="19" cy="4" r="1.4" fill="currentColor" /><circle cx="5" cy="19" r="1" fill="currentColor" /></svg>
+  <span>Ask the stars</span>
+</button>
+
+<section class="ask" id="ask-panel" role="dialog" aria-modal="false" aria-labelledby="ask-title" hidden data-ask>
+  <header class="ask-h">
+    <div>
+      <h2 id="ask-title">Ask the stars</h2>
+      <p>Answers only from what's on this site. If it isn't here, it says so.</p>
+    </div>
+    <button type="button" class="ask-x" aria-label="Close" data-ask-close>×</button>
+  </header>
+  <ol class="log" aria-live="polite" data-ask-log>
+    <li class="msg bot"><p>Hi! Ask me anything about {profile.person.name.split(' ')[0]}'s work, skills or background.</p></li>
+  </ol>
+  <div class="chips" data-ask-chips>
+    {SUGGEST.map((q) => <button type="button" data-ask-q={q}>{q}</button>)}
+  </div>
+  <form class="ask-f" data-ask-form>
+    <label class="sr" for="ask-input">Your question</label>
+    <input id="ask-input" name="q" maxlength="400" autocomplete="off" placeholder="Ask a question…" required />
+    <button type="submit" class="btn solid small">Ask</button>
+  </form>
+</section>
+
+<script>
+  import corpus from '../lib/corpus.gen.js';
+  import { localAnswer } from '../lib/ask-core.js';
+
+  const panel = document.querySelector<HTMLElement>('[data-ask]')!;
+  const log = panel.querySelector<HTMLOListElement>('[data-ask-log]')!;
+  const form = panel.querySelector<HTMLFormElement>('[data-ask-form]')!;
+  const input = form.querySelector<HTMLInputElement>('input')!;
+  const chips = panel.querySelector<HTMLElement>('[data-ask-chips]')!;
+  const fab = document.querySelector<HTMLButtonElement>('.ask-fab')!;
+  const history: { role: string; text: string }[] = [];
+  let busy = false;
+
+  function open(q?: string) {
+    panel.hidden = false;
+    fab.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('asking');
+    if (q) ask(q); else input.focus();
+  }
+  function close() {
+    panel.hidden = true;
+    fab.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('asking');
+    fab.focus();
+  }
+
+  function add(role: 'me' | 'bot', text: string, sources: { title: string; href?: string }[] = []) {
+    const li = document.createElement('li');
+    li.className = `msg ${role}`;
+    const p = document.createElement('p');
+    p.textContent = text;
+    li.append(p);
+    if (sources.length) {
+      const s = document.createElement('p');
+      s.className = 'src';
+      s.append('From: ');
+      sources.forEach((src, i) => {
+        if (i) s.append(', ');
+        const a = document.createElement('a');
+        a.href = src.href || '#';
+        a.textContent = src.title;
+        s.append(a);
+      });
+      li.append(s);
+    }
+    log.append(li);
+    log.scrollTop = log.scrollHeight;
+    return li;
+  }
+
+  async function ask(q: string) {
+    if (busy || !q.trim()) return;
+    busy = true;
+    chips.hidden = true;
+    add('me', q);
+    const wait = add('bot', '');
+    wait.classList.add('typing');
+    wait.querySelector('p')!.innerHTML = '<i></i><i></i><i></i><span class="sr">Thinking</span>';
+    let out;
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ q, history }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.status === 429) out = { answer: data?.detail ?? 'Too many questions at once. Try again in a minute.', sources: [] };
+      else if (!res.ok || !data?.answer) throw new Error('unavailable');
+      else out = data;
+    } catch {
+      out = localAnswer(q, corpus);
+    }
+    wait.remove();
+    add('bot', out.answer, out.sources);
+    history.push({ role: 'user', text: q }, { role: 'model', text: out.answer });
+    busy = false;
+    input.focus();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = input.value;
+    input.value = '';
+    ask(q);
+  });
+  document.querySelectorAll<HTMLElement>('[data-ask-open]').forEach((b) =>
+    b.addEventListener('click', () => (panel.hidden ? open(b.dataset.askQ) : b === fab ? close() : open(b.dataset.askQ))));
+  document.querySelectorAll<HTMLElement>('[data-ask-q]').forEach((b) => {
+    if (!b.hasAttribute('data-ask-open')) b.addEventListener('click', () => ask(b.dataset.askQ!));
+  });
+  panel.querySelector('[data-ask-close]')!.addEventListener('click', close);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) close(); });
+</script>
+
+<style is:global>
+  .ask-fab {
+    position: fixed; z-index: 35; right: 20px; bottom: 20px;
+    display: inline-flex; align-items: center; gap: 10px;
+    font: 650 0.92rem var(--body); color: var(--night); cursor: pointer;
+    background: linear-gradient(135deg, var(--gold), #ffd98a); border: 0; border-radius: 999px; padding: 12px 20px 12px 16px;
+    box-shadow: 0 12px 34px -10px rgb(242 181 68 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.15) inset;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .ask-fab:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px rgb(242 181 68 / 0.75); }
+  .ask-fab svg { width: 20px; height: 20px; animation: ask-twinkle 3.2s ease-in-out infinite; }
+  @keyframes ask-twinkle { 50% { transform: rotate(18deg) scale(0.88); } }
+  body.asking .ask-fab { opacity: 0; pointer-events: none; }
+
+  .ask {
+    position: fixed; z-index: 36; right: 20px; bottom: 20px;
+    width: min(400px, calc(100vw - 24px)); height: min(580px, calc(100dvh - 110px));
+    display: grid; grid-template-rows: auto 1fr auto auto;
+    background: rgb(22 27 64 / 0.985); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgb(242 181 68 / 0.35); border-radius: 22px;
+    box-shadow: 0 30px 80px -20px #000; overflow: hidden;
+    animation: ask-rise 0.35s cubic-bezier(.2,.9,.3,1.15);
+  }
+  .ask[hidden] { display: none; }
+  @keyframes ask-rise { from { opacity: 0; transform: translateY(16px) scale(0.98); } }
+  .ask-h { display: flex; justify-content: space-between; gap: 12px; padding: 18px 16px 14px 20px; border-bottom: 1px solid var(--line); }
+  .ask-h h2 { font-size: 1.05rem; }
+  .ask-h p { color: var(--dim); font-size: 0.8rem; margin-top: 4px; }
+  .ask-x { font-size: 1.5rem; line-height: 1; color: var(--dim); background: none; border: 0; cursor: pointer; padding: 2px 8px; align-self: start; }
+  .ask-x:hover { color: var(--text); }
+
+  .ask .log { list-style: none; margin: 0; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; }
+  .ask .msg { max-width: 88%; padding: 10px 14px; border-radius: 16px; font-size: 0.92rem; line-height: 1.55; }
+  .ask .msg.bot { background: var(--night); border: 1px solid var(--line); border-bottom-left-radius: 4px; align-self: flex-start; }
+  .ask .msg.me { background: var(--gold); color: var(--night); border-bottom-right-radius: 4px; align-self: flex-end; font-weight: 550; }
+  .ask .src { margin-top: 8px; font-size: 0.78rem; color: var(--dim); }
+  .ask .src a { color: var(--teal); }
+  .ask .typing p { display: flex; gap: 5px; padding-block: 6px; }
+  .ask .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: ask-blink 1s infinite; }
+  .ask .typing i:nth-child(2) { animation-delay: 0.15s; }
+  .ask .typing i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes ask-blink { 50% { opacity: 0.25; transform: translateY(-2px); } }
+
+  .ask .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; }
+  .ask .chips[hidden] { display: none; }
+  .ask .chips button {
+    font: inherit; font-size: 0.8rem; color: var(--text); cursor: pointer;
+    background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .ask .chips button:hover { border-color: var(--gold); color: var(--gold); }
+  .ask-f { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+  .ask-f input {
+    flex: 1; min-width: 0; font: inherit; font-size: 0.92rem; color: var(--text);
+    background: var(--night); border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 16px;
+  }
+  .ask-f input:focus-visible { outline: none; border-color: var(--gold); }
+  .ask-f .btn { font: inherit; font-weight: 650; font-size: 0.88rem; cursor: pointer; padding: 9px 18px; }
+  .ask .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  @media (max-width: 560px) {
+    .ask-fab span { display: none; }
+    .ask-fab { padding: 14px; right: 14px; bottom: 14px; }
+    .ask { right: 12px; bottom: 12px; }
+  }
+</style>

@@ -1,57 +1,198 @@
 ---
 import Base from '../layouts/Base.astro';
 import Kundli from '../components/Kundli.astro';
-import { profile } from '../lib/profile.js';
+import { profile, factById, orgLabel } from '../lib/profile.js';
 
-const { person: p, capabilities: caps } = profile;
+const { person: p, capabilities: caps, education: edu, roles, principles, path, skills } = profile;
 
-const GLANCE = [
+const TICKER = [
   ['$115K', 'a year saved by replacing two paid services'],
   ['10M+', 'requests a day on a platform I built'],
   ['85%', 'of LLM calls served from my semantic cache'],
   ['500K+', 'users connected by my Kafka matching engine'],
+  ['35%', 'more conversions from one LLM feature'],
+  ['1851', 'peak LeetCode rating, Knight'],
+  ['200+', 'student developers led at GDSC'],
 ];
+
+// Tech stack as three orbits. Every name must exist in profile.skills.
+const ORBITS = [
+  ['LangGraph', 'RAG', 'MCP', 'LangChain'],
+  ['Java', 'Spring Boot', 'Python', 'FastAPI', 'Kafka'],
+  ['Redis', 'MongoDB', 'Kubernetes', 'Docker', 'GCP', 'React'],
+];
+const allSkills = Object.values(skills).flat();
+for (const s of ORBITS.flat()) {
+  if (!allSkills.some((x) => x === s || x.startsWith(`${s} `))) throw new Error(`Orbit skill not in profile.yaml: ${s}`);
+}
+
+// Selected work. Each gets a constellation generated from its id, so the preview is stable.
+const SELECTED = ['milansathi', 'firebase-replacement', 'chat-suggestions', 'semantic-cache', 'ai-code-reviewer', 'resume-tailor'];
+function constellation(id) {
+  let h = 2166136261;
+  for (const c of id) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) / 4294967296);
+  const pts = Array.from({ length: 6 + Math.floor(rnd() * 3) }, () => [18 + rnd() * 204, 18 + rnd() * 104]);
+  // Greedy nearest-neighbour path, so the lines read as one figure.
+  const left = pts.slice(1), order = [pts[0]];
+  while (left.length) {
+    const [lx, ly] = order.at(-1);
+    let bi = 0;
+    left.forEach(([x, y], i) => { if ((x - lx) ** 2 + (y - ly) ** 2 < (left[bi][0] - lx) ** 2 + (left[bi][1] - ly) ** 2) bi = i; });
+    order.push(left.splice(bi, 1)[0]);
+  }
+  return { pts: order.map(([x, y]) => [Math.round(x), Math.round(y)]), d: order.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(0)} ${y.toFixed(0)}`).join(' ') };
+}
+const work = SELECTED.map((id, i) => {
+  const f = factById[id];
+  return {
+    n: String(i + 1).padStart(2, '0'), id, title: f.title, credit: f.credit,
+    org: orgLabel(f) === f.title ? 'Jeevansathi' : orgLabel(f),
+    line: f.plain ?? f.text, metric: f.metrics?.[0], href: id === 'milansathi' ? '/work/milansathi/' : `/work/#${id}`,
+    sky: constellation(id),
+  };
+});
+
 const DOORS = [
   { who: 'Hiring?', what: 'Experience, education and how I work.', href: '/about/', cta: 'About me' },
   { who: 'Have a project?', what: 'AI agents and tools that replace paid services or manual work.', href: '/can/agents-tools/', cta: 'Agents & tools' },
   { who: 'Student or engineer?', what: 'How I went from 1,200+ DSA problems to production systems.', href: '/about/#path', cta: 'My path' },
 ];
+const ASK = ['What has he built with LLMs?', 'How did he prove milanSathi was correct?', 'Is he open to relocating?'];
+const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0];
 ---
 <Base title={`${p.name}: Backend & AI engineer`} description="I build AI systems that replace what companies pay for. About $115,000 a year saved so far." page="home">
-  <section class="hero wrap">
-    <div class="intro">
-      <div class="hello">
-        {p.photo
-          ? <img class="avatar" src={p.photo} alt={p.name} width="56" height="56" />
-          : <span class="avatar ph" aria-hidden="true">DB</span>}
-        <p>Hi, I'm Devatraj. Backend &amp; AI engineer at Info Edge.</p>
+  <section class="hero" data-hero>
+    <div class="scene" aria-hidden="true">
+      <div class="planet" data-depth="0.12">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <radialGradient id="pl" cx="35%" cy="32%" r="75%">
+              <stop offset="0" stop-color="#ffe2a3" />
+              <stop offset="0.45" stop-color="#f2b544" />
+              <stop offset="1" stop-color="#7a4a12" />
+            </radialGradient>
+            <mask id="crescent"><rect width="200" height="200" fill="#fff" /><circle cx="128" cy="82" r="64" fill="#000" /></mask>
+          </defs>
+          <circle cx="100" cy="100" r="62" fill="url(#pl)" mask="url(#crescent)" />
+          <circle cx="100" cy="100" r="62" fill="none" stroke="#f2b544" stroke-opacity="0.25" />
+        </svg>
       </div>
-      <h1>I build AI systems that replace what companies pay for.</h1>
-      <p class="sub">I turn expensive vendors, slow AI features and fragile backends into systems your team owns, and I prove they work before anything switches over.</p>
-      <div class="ctas">
-        <a class="btn solid" href="#can">See what I can do</a>
-        <a class="btn" href={`mailto:${p.email}`}>Email me</a>
-        <a class="btn" href={p.links.linkedin} rel="me noopener" target="_blank">
-          <svg class="li" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 21 11.2 21 14.5V21h-4v-5.8c0-1.4-.03-3.2-1.95-3.2-1.95 0-2.25 1.52-2.25 3.1V21H9z"/></svg>
-          LinkedIn
-        </a>
-      </div>
-      <p class="live">
-        <b class="num" data-live-rate="115">0</b>
-        <span>requests (estimated) served by the config platform I built since you opened this page, based on its 10M+ a day average.</span>
-      </p>
+      <div class="ring" data-depth="0.18"></div>
+      <svg class="ridge r1" data-depth="0.32" viewBox="0 0 1440 320" preserveAspectRatio="none"><path d="M0 230 L120 170 L210 200 L330 120 L420 175 L540 95 L660 180 L760 140 L880 205 L1010 110 L1120 170 L1240 125 L1340 185 L1440 150 V320 H0Z" /></svg>
+      <svg class="ridge r2" data-depth="0.22" viewBox="0 0 1440 320" preserveAspectRatio="none"><path d="M0 250 L90 215 L200 245 L300 190 L410 235 L520 175 L640 230 L760 200 L860 250 L980 185 L1100 235 L1210 205 L1330 245 L1440 215 V320 H0Z" /></svg>
+      <svg class="ridge r3" data-depth="0.1" viewBox="0 0 1440 320" preserveAspectRatio="none"><path d="M0 280 C180 250 300 270 460 262 C640 252 760 286 940 272 C1100 260 1260 282 1440 266 V320 H0Z" /></svg>
     </div>
-    <Kundli />
+
+    <div class="wrap hero-in">
+      <div class="intro">
+        <div class="hello" data-reveal>
+          {p.photo
+            ? <img class="avatar" src={p.photo} alt={p.name} width="52" height="52" />
+            : <span class="avatar ph" aria-hidden="true">DB</span>}
+          <p>Hi, I'm Devatraj. Backend &amp; AI engineer at Info Edge.</p>
+        </div>
+        <h1 data-reveal>I build AI systems that <em>replace</em> what companies pay for.</h1>
+        <p class="sub" data-reveal>I turn expensive vendors, slow AI features and fragile backends into systems your team owns, and I prove they work before anything switches over.</p>
+        <div class="ctas" data-reveal>
+          <a class="btn solid" href="#can">See what I can do</a>
+          <button type="button" class="btn ask-btn" data-ask-open>Ask the stars about me</button>
+        </div>
+      </div>
+      <Kundli />
+    </div>
+    <a class="cue" href="#chart" aria-label="Scroll to the next section"><span></span></a>
+  </section>
+
+  <div class="ticker" aria-label="At a glance">
+    <ul class="track">
+      {[0, 1].map((copy) => TICKER.map(([n, t]) => (
+        <li aria-hidden={copy ? 'true' : undefined}><b class="num">{n}</b><span>{t}</span><i aria-hidden="true">✦</i></li>
+      )))}
+    </ul>
+  </div>
+
+  <section class="section wrap" id="chart">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Birth chart</p>
+      <h2>The short version.</h2>
+    </div>
+    <div class="bento">
+      <article class="tile t-self" data-spot data-reveal>
+        <p class="tile-k">Ascendant · who I am</p>
+        <p class="big">Backend &amp; AI engineer who replaces paid vendors with systems teams own.</p>
+        <p class="dim">{roles[0].title}, {roles[0].org} since {roles[0].dates.split(' ')[0]}. Before that, {roles[1].title.toLowerCase()} at {roles[1].org.split('· ')[1]}.</p>
+        <a class="go" href="/about/">More about me</a>
+      </article>
+
+      <article class="tile t-now" data-spot data-reveal>
+        <p class="tile-k">Right now in {p.location.split(',')[0]}</p>
+        <div class="now">
+          <div>
+            <p class="clock num" data-clock>--:--</p>
+            <p class="dim small-t" data-date>India Standard Time</p>
+          </div>
+          <div class="moon-wrap">
+            <svg class="moon" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" class="moon-dark" /><path data-moon d="" class="moon-lit" /></svg>
+            <p class="dim small-t" data-moon-name>Tonight's moon</p>
+          </div>
+        </div>
+        <p class="dim small-t">Open to relocating to {p.relocation}.</p>
+      </article>
+
+      <article class="tile t-edu" data-spot data-reveal>
+        <p class="tile-k">Foundations</p>
+        <p class="stat num" data-count>{edu.cgpa.split(' ')[0]}</p>
+        <p class="dim small-t">CGPA out of 10, B.Tech CSE at NIT Patna</p>
+      </article>
+
+      <article class="tile t-cp" data-spot data-reveal>
+        <p class="tile-k">Competition</p>
+        <p class="stat num" data-count>1851</p>
+        <p class="dim small-t">peak LeetCode rating, Knight, top 5%</p>
+      </article>
+
+      <article class="tile t-orbit" data-reveal>
+        <p class="tile-k">The planets I work with</p>
+        <div class="orbits" aria-label={`Tech stack: ${ORBITS.flat().join(', ')}`} role="img">
+          <div class="sun" aria-hidden="true">
+            <svg viewBox="0 0 40 40"><rect x="2" y="2" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 2 L38 38 M38 2 L2 38 M20 2 L38 20 L20 38 L2 20 Z" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+          </div>
+          {ORBITS.map((ring, ri) => (
+            <div class={`orbit o${ri + 1}`} aria-hidden="true">
+              {ring.map((s, i) => (
+                <span class="planet-l" style={`--a: ${(360 / ring.length) * i + ri * 23}deg`}><span class="arm"><b>{s}</b></span></span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </article>
+
+      <article class="tile t-rule" data-spot data-reveal>
+        <p class="tile-k">How I work</p>
+        <p class="quote">“{rule.title}.”</p>
+        <p class="dim">{rule.text}</p>
+      </article>
+
+      <article class="tile t-mail" data-reveal>
+        <p class="tile-k">Say hello</p>
+        <button type="button" class="copy" data-copy={p.email}>
+          <span class="addr">{p.email}</span>
+          <span class="copy-s" data-copy-label>Copy email</span>
+        </button>
+      </article>
+    </div>
   </section>
 
   <section class="section wrap" id="can">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Houses of work</p>
       <h2>What I can do for you</h2>
       <p>Five things I'm good at. Each page has a small tool you can try and the work that proves it. Explore all five to fill the diamonds in the header.</p>
     </div>
     <div class="caps">
       {caps.map((c) => (
-        <a class="cap" href={`/can/${c.slug}/`} data-visited={c.slug} data-spot>
+        <a class="cap" href={`/can/${c.slug}/`} data-visited={c.slug} data-spot data-reveal>
           <span class="cap-metric"><b class="num">{c.headline_metric[0]}</b> {c.headline_metric[1]}</span>
           <h3>{c.title}</h3>
           <p class="dim">{c.promise}</p>
@@ -61,18 +202,74 @@ const DOORS = [
     </div>
   </section>
 
-  <section class="section wrap">
-    <div class="section-head"><h2>At a glance</h2></div>
-    <ul class="glance">
-      {GLANCE.map(([n, t]) => <li><b class="num" data-count>{n}</b><span>{t}</span></li>)}
-    </ul>
+  <section class="section wrap" id="work">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Constellations</p>
+      <h2>Selected work</h2>
+      <p>Six projects I'd show first. Every one has numbers you can check.</p>
+    </div>
+    <ol class="work" data-work>
+      {work.map((w) => (
+        <li data-reveal>
+          <a href={w.href} data-preview={w.id}>
+            <span class="w-n num">{w.n}</span>
+            <span class="w-main">
+              <span class="w-org">{w.org}{w.credit === 'Contributed' && ', team project'}</span>
+              <span class="w-t">{w.title}</span>
+              <span class="w-line dim">{w.line}</span>
+            </span>
+            {w.metric && <span class="w-m">{w.metric}</span>}
+            <span class="w-go" aria-hidden="true">→</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+    <a class="btn all" href="/work/">All 18 projects</a>
+    <div class="peek" aria-hidden="true" data-peek>
+      {work.map((w) => (
+        <figure data-peek-id={w.id}>
+          <svg viewBox="0 0 240 140">
+            <path d={w.sky.d} class="c-line" />
+            {w.sky.pts.map(([x, y], i) => <circle cx={x} cy={y} r={i === 0 ? 3.4 : 2.2} class="c-star" style={`--i:${i}`} />)}
+          </svg>
+          <figcaption><b>{w.metric ?? w.title}</b></figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="section wrap" id="path">
+    <div class="transits">
+      <div class="t-side" data-reveal>
+        <p class="eyebrow">Transits</p>
+        <h2>From DSA to production</h2>
+        <p class="dim">How I got here, for students and engineers who ask. Scroll and the path fills in.</p>
+        <p class="year num" data-year aria-hidden="true">{path[0].when}</p>
+      </div>
+      <ol class="path" data-timeline>
+        {path.map((s) => <li data-when={s.when}><span class="when num">{s.when}</span><span class="what">{s.what}</span></li>)}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section wrap" id="ask">
+    <div class="ask-card" data-reveal>
+      <div>
+        <p class="eyebrow">Ask the stars</p>
+        <h2>Ask anything about my work.</h2>
+        <p class="dim">An AI that answers only from the facts on this site, cites where each answer comes from, and says so when it doesn't know.</p>
+      </div>
+      <div class="ask-qs">
+        {ASK.map((q) => <button type="button" data-ask-open data-ask-q={q}>{q}<span aria-hidden="true">↗</span></button>)}
+      </div>
+    </div>
   </section>
 
   <section class="section wrap">
-    <div class="section-head"><h2>Start where it makes sense for you</h2></div>
+    <div class="section-head" data-reveal><h2>Start where it makes sense for you</h2></div>
     <div class="doors">
       {DOORS.map((d) => (
-        <a class="door" href={d.href} data-spot>
+        <a class="door" href={d.href} data-spot data-reveal>
           <h3>{d.who}</h3>
           <p class="dim">{d.what}</p>
           <span class="go">{d.cta}</span>
@@ -82,43 +279,234 @@ const DOORS = [
   </section>
 </Base>
 
-<style>
-  .hero {
-    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: clamp(48px, 6vw, 88px); align-items: start;
-    padding-block: clamp(56px, 9vw, 112px) 0; position: relative;
-  }
-  .hero::before {
-    content: ''; position: absolute; inset: -140px -40vw auto; height: 1000px; z-index: -1; pointer-events: none;
-    background-image:
-      radial-gradient(1.2px 1.2px at 12% 18%, #fff8 50%, transparent),
-      radial-gradient(1px 1px at 34% 72%, #fff6 50%, transparent),
-      radial-gradient(1.4px 1.4px at 58% 12%, #fff7 50%, transparent),
-      radial-gradient(1px 1px at 76% 64%, #fff5 50%, transparent),
-      radial-gradient(1.2px 1.2px at 88% 28%, #fff8 50%, transparent),
-      radial-gradient(1px 1px at 22% 48%, #fff4 50%, transparent),
-      radial-gradient(1px 1px at 66% 86%, #fff5 50%, transparent),
-      radial-gradient(60% 50% at 70% 40%, rgb(70 60 160 / 0.35), transparent);
-  }
-  .hello { display: flex; align-items: center; gap: 16px; color: var(--dim); margin-bottom: 32px; }
-  .avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; object-fit: cover; }
-  .avatar.ph { display: grid; place-items: center; font: 600 1rem var(--display); color: var(--gold); background: var(--night-3); border: 1.5px dashed var(--gold); }
-  .intro { padding-top: clamp(0px, 3vw, 40px); }
-  h1 { font-size: clamp(2.1rem, 4.9vw, 3.8rem); line-height: 1.04; letter-spacing: -0.035em; text-wrap: balance; }
-  .sub { color: var(--dim); font-size: 1.15rem; margin-top: 28px; max-width: 34rem; line-height: 1.6; }
-  .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 40px; }
-  .li { width: 17px; height: 17px; }
-  .live { display: flex; gap: 16px; align-items: baseline; margin-top: 44px; max-width: 34rem; }
-  .live b { font: 600 1.5rem var(--display); color: var(--teal); min-width: 4.5ch; font-variant-numeric: lining-nums; }
-  .live span { color: var(--dim); font-size: 0.88rem; line-height: 1.5; }
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Parallax: scenery layers sink at their own depth as the hero scrolls away.
+  const layers = [...document.querySelectorAll<HTMLElement>('[data-depth]')];
+  const hero = document.querySelector<HTMLElement>('[data-hero]')!;
+  if (!reduce && layers.length) {
+    let ticking = false;
+    const paint = () => {
+      ticking = false;
+      const y = Math.min(scrollY, hero.offsetHeight);
+      layers.forEach((l) => (l.style.transform = `translate3d(0, ${y * +l.dataset.depth!}px, 0)`));
+    };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(paint); } }, { passive: true });
+    paint();
+  }
+
+  // Live IST clock and tonight's moon phase (synodic month from a known new moon).
+  const clock = document.querySelector('[data-clock]')!;
+  const date = document.querySelector('[data-date]')!;
+  const tick = () => {
+    const now = new Date();
+    clock.textContent = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+    date.textContent = `${now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'short' })}, IST`;
+  };
+  tick();
+  setInterval(tick, 15_000);
+  {
+    const SYN = 29.530588853;
+    const age = (((Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 864e5) % SYN + SYN) % SYN;
+    const phase = age / SYN; // 0 new, 0.5 full
+    const lit = (1 - Math.cos(2 * Math.PI * phase)) / 2;
+    const names = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
+    const name = names[Math.round(phase * 8) % 8];
+    // Lit region: outer half-circle on the lit side, then an ellipse back for the terminator.
+    const r = 17, rx = Math.abs(r * Math.cos(2 * Math.PI * phase)).toFixed(2);
+    const waxing = phase < 0.5;
+    const outer = waxing ? 1 : 0;
+    // The terminator bulges toward the lit side for a crescent and away from it for a gibbous moon.
+    const inner = lit < 0.5 ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
+    document.querySelector('[data-moon]')!.setAttribute('d', `M20 3 A${r} ${r} 0 0 ${outer} 20 37 A${rx} ${r} 0 0 ${inner} 20 3Z`);
+    document.querySelector('[data-moon-name]')!.textContent = `${name}, ${Math.round(lit * 100)}% lit`;
+  }
+
+  // Copy email.
+  document.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    const label = b.querySelector('[data-copy-label]')!;
+    try { await navigator.clipboard.writeText(b.dataset.copy!); label.textContent = 'Copied ✓'; }
+    catch { location.href = `mailto:${b.dataset.copy}`; return; }
+    b.classList.add('done');
+    setTimeout(() => { label.textContent = 'Copy email'; b.classList.remove('done'); }, 2200);
+  }));
+
+  // Selected work: a constellation card that follows the pointer.
+  const peek = document.querySelector<HTMLElement>('[data-peek]')!;
+  {
+    let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
+    const follow = () => {
+      x += (tx - x) * 0.18; y += (ty - y) * 0.18;
+      peek.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(follow) : 0;
+    };
+    document.querySelectorAll<HTMLElement>('[data-preview]').forEach((a) => {
+      a.addEventListener('pointerenter', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        peek.querySelectorAll('figure').forEach((f) => f.classList.toggle('on', f.dataset.peekId === a.dataset.preview));
+        if (!peek.classList.contains('show')) { x = tx = e.clientX + 24; y = ty = e.clientY - 80; }
+        peek.classList.add('show');
+      });
+      a.addEventListener('pointermove', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        tx = e.clientX + 24; ty = e.clientY - 80;
+        if (!raf) raf = requestAnimationFrame(follow);
+      });
+      a.addEventListener('pointerleave', () => peek.classList.remove('show'));
+    });
+  }
+
+  // Transits: the big year follows the milestone nearest the reading line.
+  const year = document.querySelector('[data-year]')!;
+  const stops = [...document.querySelectorAll<HTMLElement>('[data-when]')];
+  addEventListener('scroll', () => {
+    let cur = stops[0];
+    for (const s of stops) if (s.getBoundingClientRect().top < innerHeight * 0.6) cur = s;
+    if (year.textContent !== cur.dataset.when) year.textContent = cur.dataset.when!;
+  }, { passive: true });
+</script>
+
+<style>
+  /* ---------- Hero ---------- */
+  .hero { position: relative; min-height: 100svh; margin-top: -76px; padding-top: 76px; display: grid; align-content: center; overflow: clip; }
+  .scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+  .scene > * { position: absolute; will-change: transform; }
+  .planet { width: clamp(90px, 10vw, 150px); top: 7%; left: 38%; filter: drop-shadow(0 0 40px rgb(242 181 68 / 0.35)); }
+  .ring {
+    width: clamp(380px, 52vw, 760px); aspect-ratio: 1; right: -12%; top: -14%; border-radius: 50%;
+    border: 1px dashed rgb(242 181 68 / 0.16);
+    background: radial-gradient(closest-side, transparent 64%, rgb(242 181 68 / 0.04) 65%, transparent 66%, transparent 83%, rgb(111 211 197 / 0.05) 84%, transparent 85%);
+    animation: zodiac 140s linear infinite;
+  }
+  @keyframes zodiac { to { rotate: 360deg; } }
+  .ridge { left: 0; width: 100%; bottom: 0; height: clamp(160px, 26vh, 300px); }
+  .r1 path { fill: #141a45; }
+  .r2 path { fill: #10153a; }
+  .r3 path { fill: var(--night); }
+  .r1 { filter: drop-shadow(0 -10px 30px rgb(98 70 190 / 0.25)); }
+  .scene::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(to bottom, transparent, var(--night)); }
+
+  .hero-in {
+    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(48px, 6vw, 88px); align-items: center; width: 100%;
+    padding-block: clamp(24px, 4vh, 56px) clamp(110px, 15vh, 170px);
+  }
+  .hello { display: flex; align-items: center; gap: 14px; color: var(--dim); margin-bottom: 26px; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; flex: none; object-fit: cover; }
+  .avatar.ph { display: grid; place-items: center; font: 600 0.95rem var(--display); color: var(--gold); background: var(--night-3); border: 1.5px dashed var(--gold); }
+  h1 { font-size: clamp(2.2rem, 4.1vw, 3.45rem); line-height: 1.06; letter-spacing: -0.04em; text-wrap: balance; }
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(100deg, var(--gold) 20%, #fff1c9 45%, var(--gold) 70%) 0 0 / 220% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shimmer 5s ease-in-out infinite;
+  }
+  @keyframes shimmer { 50% { background-position: 100% 0; } }
+  .sub { color: var(--dim); font-size: 1.12rem; margin-top: 24px; max-width: 33rem; line-height: 1.6; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+  .ask-btn { font: inherit; font-weight: 650; cursor: pointer; background: rgb(15 19 48 / 0.5); color: var(--teal); border-color: rgb(111 211 197 / 0.45); }
+  .ask-btn:hover { color: var(--night); background: var(--teal); border-color: var(--teal); }
+  .cue { position: absolute; left: 50%; bottom: 28px; translate: -50% 0; width: 26px; height: 42px; border: 1.5px solid var(--line); border-radius: 999px; }
+  .cue span { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--gold); animation: cue 1.8s ease-in-out infinite; }
+  @keyframes cue { 60% { transform: translateY(14px); opacity: 0; } 61% { transform: none; opacity: 0; } }
+
+  /* ---------- Ticker ---------- */
+  .ticker {
+    overflow: hidden; border-block: 1px solid var(--line); background: rgb(22 27 64 / 0.55);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .track { list-style: none; margin: 0; padding: 22px 0; display: flex; width: max-content; animation: marquee 48s linear infinite; }
+  .ticker:hover .track { animation-play-state: paused; }
+  .track li { display: flex; align-items: baseline; gap: 10px; padding-right: 40px; white-space: nowrap; }
+  .track b { font: 600 1.35rem var(--display); color: var(--gold); letter-spacing: -0.02em; }
+  .track span { color: var(--dim); font-size: 0.95rem; }
+  .track i { font-style: normal; color: var(--line); padding-left: 30px; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+
+  /* ---------- Bento ---------- */
+  .bento {
+    display: grid; gap: 20px; grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas:
+      'self self now now'
+      'self self edu cp'
+      'orbit orbit rule rule'
+      'orbit orbit mail mail';
+  }
+  .tile {
+    position: relative; overflow: hidden; display: grid; gap: 14px; align-content: start;
+    padding: clamp(24px, 2.6vw, 34px); border-radius: var(--radius-lg);
+    background: linear-gradient(160deg, rgb(30 36 82 / 0.75), rgb(22 27 64 / 0.75));
+    border: 1px solid var(--line); backdrop-filter: blur(6px);
+  }
+  .tile[data-spot]::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgb(242 181 68 / 0.12), transparent 60%);
+  }
+  .tile:hover::before { opacity: 1; }
+  .tile-k { color: var(--gold); font-weight: 650; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .small-t { font-size: 0.88rem; }
+  .t-self { grid-area: self; align-content: space-between; min-height: 340px; }
+  .t-self .big { font: 600 clamp(1.35rem, 2.2vw, 1.85rem) / 1.2 var(--display); letter-spacing: -0.03em; text-wrap: balance; }
+  .t-now { grid-area: now; }
+  .now { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .clock { font: 600 clamp(2.4rem, 4.2vw, 3.4rem) / 1 var(--display); letter-spacing: -0.04em; }
+  .moon-wrap { display: grid; justify-items: end; gap: 8px; text-align: right; }
+  .moon { width: 56px; height: 56px; filter: drop-shadow(0 0 14px rgb(255 241 201 / 0.35)); }
+  .moon-dark { fill: #1b2150; stroke: rgb(255 255 255 / 0.12); }
+  .moon-lit { fill: #fff1c9; }
+  .t-edu { grid-area: edu; }
+  .t-cp { grid-area: cp; }
+  .stat { font: 600 clamp(2.2rem, 3.6vw, 3rem) / 1 var(--display); color: var(--gold); letter-spacing: -0.04em; }
+  .t-rule { grid-area: rule; }
+  .quote { font: 600 clamp(1.4rem, 2.4vw, 1.9rem) / 1.15 var(--display); letter-spacing: -0.03em; }
+  .t-mail { grid-area: mail; align-content: space-between; }
+  .copy {
+    font: inherit; color: var(--text); cursor: pointer; text-align: left; width: 100%;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+    background: var(--night); border: 1.5px solid var(--line); border-radius: 16px; padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .copy:hover { border-color: var(--gold); }
+  .addr { font: 500 clamp(1rem, 1.8vw, 1.25rem) var(--display); overflow-wrap: anywhere; }
+  .copy-s { font-weight: 650; font-size: 0.85rem; color: var(--night); background: var(--gold); border-radius: 999px; padding: 6px 14px; }
+  .copy.done .copy-s { background: var(--teal); }
+
+  .t-orbit { grid-area: orbit; min-height: 440px; }
+  .orbits { position: relative; width: min(86%, 400px); aspect-ratio: 1; margin: 12px auto; }
+  .sun {
+    position: absolute; inset: 41%; display: grid; place-items: center; color: var(--gold); border-radius: 50%;
+    background: radial-gradient(circle, rgb(242 181 68 / 0.28), transparent 70%);
+  }
+  .sun svg { width: 60%; animation: zodiac 40s linear infinite; }
+  .orbits { container-type: inline-size; }
+  .orbit { position: absolute; border-radius: 50%; border: 1px solid rgb(45 52 112 / 0.9); animation: zodiac var(--d) linear infinite; }
+  .o1 { inset: 26%; --d: 38s; --rad: 24cqw; }
+  .o2 { inset: 13%; --d: 58s; --rad: 37cqw; animation-direction: reverse; }
+  .o3 { inset: 0; --d: 80s; --rad: 50cqw; }
+  /* Ring spins; each arm sits at angle --a on the ring; the label spins back so text stays upright. */
+  .planet-l { position: absolute; left: 50%; top: 50%; rotate: var(--a); }
+  .arm { position: absolute; translate: 0 calc(-1 * var(--rad)); }
+  .planet-l b {
+    position: absolute; translate: -50% -50%; display: block;
+    white-space: nowrap; font-size: 0.74rem; font-weight: 650; padding: 4px 10px; border-radius: 999px;
+    background: var(--night-3); border: 1px solid var(--line); color: var(--text);
+    animation: upright var(--d) linear infinite; animation-direction: inherit;
+  }
+  .o2 .planet-l b { animation-direction: reverse; }
+  @keyframes upright { from { rotate: calc(-1 * var(--a)); } to { rotate: calc(-1 * var(--a) - 360deg); } }
+  .o1 .planet-l b { border-color: rgb(111 211 197 / 0.5); color: var(--teal); }
+  .o2 .planet-l b { border-color: rgb(242 181 68 / 0.45); }
+  .t-orbit:hover .orbit, .t-orbit:hover .planet-l b, .t-orbit:hover .sun svg { animation-play-state: paused; }
+
+  /* ---------- Capabilities ---------- */
   .caps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
   .cap { grid-column: span 2; }
   .cap:nth-child(1), .cap:nth-child(2) { grid-column: span 3; }
   .cap, .door {
     position: relative; overflow: hidden; display: grid; gap: 14px; align-content: start;
     padding: clamp(26px, 3vw, 36px); border-radius: var(--radius-lg); text-decoration: none;
-    background: var(--night-2); border: 1px solid var(--line);
+    background: rgb(22 27 64 / 0.72); border: 1px solid var(--line); backdrop-filter: blur(6px);
     transition: border-color 0.25s, transform 0.25s;
   }
   .cap::before, .door::before {
@@ -131,24 +519,108 @@ const DOORS = [
   .cap-metric b { font: 600 1.4rem var(--display); color: var(--gold); margin-right: 6px; }
   .cap h3 { font-size: clamp(1.15rem, 1.8vw, 1.35rem); }
   .cap p { font-size: 0.98rem; }
-  .go { font-weight: 650; color: var(--gold); margin-top: 8px; display: flex; gap: 12px; align-items: center; }
+  .go { font-weight: 650; color: var(--gold); margin-top: 8px; display: flex; gap: 12px; align-items: center; text-decoration: none; }
   .seen { display: none; font-style: normal; font-size: 0.78rem; color: var(--teal); border: 1px solid var(--teal); border-radius: 999px; padding: 1px 9px; }
   .cap:global(.visited) .seen { display: inline-block; }
 
-  .glance { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 40px 32px; }
-  .glance li { display: grid; gap: 8px; padding-top: 24px; border-top: 2px solid var(--line); }
-  .glance b { font: 600 clamp(2rem, 4vw, 2.6rem) var(--display); color: var(--gold); letter-spacing: -0.03em; line-height: 1; }
-  .glance span { color: var(--dim); }
+  /* ---------- Selected work ---------- */
+  .work { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); counter-reset: w; }
+  .work li { border-bottom: 1px solid var(--line); }
+  .work a {
+    display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto 2rem; gap: 28px; align-items: center;
+    padding: clamp(26px, 3.4vw, 40px) 8px; text-decoration: none; position: relative;
+    transition: padding 0.35s cubic-bezier(.2,.8,.3,1), background-color 0.35s;
+  }
+  .work a:hover { padding-left: 24px; background: linear-gradient(90deg, rgb(242 181 68 / 0.07), transparent 70%); color: inherit; }
+  .w-n { font: 500 1rem var(--display); color: var(--dim); transition: color 0.3s; }
+  .work a:hover .w-n { color: var(--gold); }
+  .w-main { display: grid; gap: 6px; }
+  .w-org { color: var(--gold); font-weight: 650; font-size: 0.82rem; }
+  .w-t { font: 600 clamp(1.25rem, 2.6vw, 1.9rem) / 1.15 var(--display); letter-spacing: -0.03em; }
+  .w-line { font-size: 0.95rem; max-width: 46rem; }
+  .w-m { color: var(--teal); font-weight: 650; font-size: 0.9rem; text-align: right; max-width: 15rem; }
+  .w-go { font-size: 1.4rem; color: var(--dim); transition: transform 0.3s, color 0.3s; }
+  .work a:hover .w-go { transform: translateX(6px) rotate(-45deg); color: var(--gold); }
+  .all { margin-top: 40px; }
+
+  .peek {
+    position: fixed; left: 0; top: 0; z-index: 25; pointer-events: none; width: 260px;
+    opacity: 0; scale: 0.9; transition: opacity 0.25s, scale 0.25s;
+  }
+  .peek.show { opacity: 1; scale: 1; }
+  .peek figure { display: none; margin: 0; padding: 10px; border-radius: 18px; background: rgb(12 16 41 / 0.92); border: 1px solid rgb(242 181 68 / 0.4); box-shadow: 0 24px 60px -20px #000; }
+  .peek figure.on { display: block; }
+  .peek svg { width: 100%; display: block; border-radius: 12px; background: radial-gradient(80% 90% at 50% 30%, rgb(98 70 190 / 0.35), transparent); }
+  .c-line { fill: none; stroke: rgb(242 181 68 / 0.55); stroke-width: 1; stroke-dasharray: 600; stroke-dashoffset: 600; }
+  .peek figure.on .c-line { animation: trace 1.1s ease forwards; }
+  @keyframes trace { to { stroke-dashoffset: 0; } }
+  .c-star { fill: #fff6dc; filter: drop-shadow(0 0 4px #f2b544); opacity: 0; }
+  .peek figure.on .c-star { animation: pop-star 0.4s ease forwards; animation-delay: calc(var(--i) * 0.12s); }
+  @keyframes pop-star { from { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0); } to { opacity: 1; } }
+  .peek figcaption { padding: 10px 6px 4px; font-size: 0.85rem; color: var(--teal); }
+
+  /* ---------- Transits ---------- */
+  .transits { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+  .t-side { position: sticky; top: 120px; display: grid; gap: 18px; }
+  .t-side h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+  .year { font: 600 clamp(2rem, 3.8vw, 3.3rem) / 1 var(--display); white-space: nowrap; letter-spacing: -0.05em; margin-top: 20px; -webkit-text-stroke: 1.5px var(--gold); color: transparent; }
+  .path { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); position: relative; }
+  .path::before { content: ''; position: absolute; left: -2px; top: 0; width: 2px; height: 100%; background: var(--gold); transform-origin: top; transform: scaleY(var(--fill, 0)); }
+  .path li { display: grid; gap: 6px; padding: 30px 0 30px 34px; position: relative; }
+  .path li::before {
+    content: ''; position: absolute; left: -8px; top: 38px; width: 12px; height: 12px; transform: rotate(45deg);
+    background: var(--night); border: 2px solid var(--line); transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .path li:global(.passed)::before { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 14px rgb(242 181 68 / 0.6); }
+  .when { color: var(--gold); font-size: 0.9rem; font-weight: 650; }
+  .what { color: var(--dim); font-size: 1.1rem; transition: color 0.3s; }
+  .path li:global(.passed) .what { color: var(--text); }
+
+  /* ---------- Ask ---------- */
+  .ask-card {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center;
+    padding: clamp(32px, 5vw, 64px); border-radius: 28px; position: relative; overflow: hidden;
+    background: radial-gradient(70% 120% at 100% 0%, rgb(111 211 197 / 0.14), transparent 60%), linear-gradient(150deg, rgb(30 36 82 / 0.85), rgb(15 19 48 / 0.85));
+    border: 1px solid rgb(111 211 197 / 0.3);
+  }
+  .ask-card h2 { margin-block: 14px 16px; font-size: clamp(1.7rem, 3.6vw, 2.5rem); }
+  .ask-qs { display: grid; gap: 12px; }
+  .ask-qs button {
+    font: inherit; font-weight: 600; text-align: left; color: var(--text); cursor: pointer;
+    display: flex; justify-content: space-between; gap: 16px; align-items: center;
+    background: rgb(15 19 48 / 0.7); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .ask-qs button:hover { border-color: var(--teal); transform: translateX(4px); }
+  .ask-qs span { color: var(--teal); }
 
   .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
 
+  @media (max-width: 1100px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'self self' 'now now' 'edu cp' 'orbit orbit' 'rule rule' 'mail mail'; }
+    .t-self { min-height: 0; }
+  }
   @media (max-width: 960px) {
-    .hero { grid-template-columns: 1fr; }
+    .hero-in { grid-template-columns: 1fr; padding-top: 24px; }
+    .planet { left: auto; right: 8%; top: 9%; }
     .caps { grid-template-columns: 1fr; }
     .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: auto; }
+    .transits, .ask-card { grid-template-columns: 1fr; gap: 32px; }
+    .t-side { position: static; }
+    .year { display: none; }
+    .work a { grid-template-columns: 2.6rem minmax(0, 1fr) 1.4rem; gap: 16px; }
+    .w-m { grid-column: 2; grid-row: 2; text-align: left; max-width: none; }
+    .w-go { grid-column: 3; grid-row: 1; }
   }
   @media (min-width: 961px) and (max-width: 1100px) {
     .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: span 3; }
     .cap:last-child { grid-column: span 6; }
+  }
+  @media (max-width: 560px) {
+    .bento { grid-template-columns: 1fr; grid-template-areas: 'self' 'now' 'edu' 'cp' 'orbit' 'rule' 'mail'; }
+    .t-orbit { min-height: 0; }
+    .planet-l b { font-size: 0.66rem; padding: 3px 7px; }
+    .now { flex-direction: column; align-items: flex-start; }
+    .moon-wrap { justify-items: start; text-align: left; }
   }
 </style>

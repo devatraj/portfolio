@@ -1,11 +1,14 @@
-// Small page-wide interactions: scroll progress, count-up numbers, hover tilt,
-// the scroll-drawn timeline and the live request counter. All respect reduced motion.
+// Small page-wide interactions: scroll progress, the pill nav's scrolled state, reveal on
+// scroll, count-up numbers, hover tilt, the scroll-drawn timeline and the live request
+// counter. All respect reduced motion.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Scroll progress bar under the header.
 const bar = document.querySelector('[data-progress]');
+const pill = document.querySelector('[data-bar]');
 const timeline = document.querySelector('[data-timeline]');
 function onScroll() {
+  pill?.classList.toggle('scrolled', scrollY > 24);
   const max = document.documentElement.scrollHeight - innerHeight;
   if (bar) bar.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
   if (timeline) {
@@ -19,6 +22,21 @@ function onScroll() {
 }
 addEventListener('scroll', onScroll, { passive: true });
 onScroll();
+
+// Reveal: blocks rise into place the first time they scroll into view, staggered per batch.
+const reveals = document.querySelectorAll('[data-reveal]');
+if (!reduce && 'IntersectionObserver' in window) {
+  const ro = new IntersectionObserver((entries) => {
+    entries.filter((e) => e.isIntersecting).forEach(({ target }, i) => {
+      target.style.setProperty('--rd', `${Math.min(i, 6) * 70}ms`);
+      target.classList.add('in');
+      ro.unobserve(target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+  reveals.forEach((el) => ro.observe(el));
+} else {
+  reveals.forEach((el) => el.classList.add('in'));
+}
 
 // Count-up: "~$45K", "5,000+", "99.9%" animate from zero when they scroll into view.
 const counters = document.querySelectorAll('[data-count]');

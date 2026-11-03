@@ -3,8 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "node scripts/gen-corpus.mjs && astro dev",
+    "build": "node scripts/gen-corpus.mjs && astro build",
     "preview": "astro preview"
   },
   "dependencies": {

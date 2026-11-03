@@ -63,11 +63,14 @@ const ASK = ['What has he built with LLMs?', 'How did he prove milanSathi was co
 const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0];
 ---
 <Base title={`${p.name}: Backend & AI engineer`} description="I build AI systems that replace what companies pay for. About $115,000 a year saved so far." page="home">
+  <div class="planets-bg" aria-hidden="true" data-planets>
+    <div class="h-body h-moon" data-speed="0.06"><canvas data-sphere="moon" data-tex="512" data-moon-live></canvas></div>
+    <div class="h-body h-saturn" data-speed="0.1"><canvas data-sphere="saturn" data-tex="512" data-spin="0.03" data-roll="-18" data-tilt="0.34"></canvas></div>
+    <div class="h-body h-jupiter" data-speed="0.15"><canvas data-sphere="jupiter" data-tex="512" data-spin="0.05" data-roll="-4"></canvas></div>
+  </div>
+
   <section class="hero" data-hero>
     <div class="scene" aria-hidden="true">
-      <div class="h-body h-moon" data-depth="0.12"><canvas data-sphere="moon" data-tex="512" data-moon-live></canvas></div>
-      <div class="h-body h-saturn" data-depth="0.2"><canvas data-sphere="saturn" data-tex="512" data-spin="0.03" data-roll="-18" data-tilt="0.34"></canvas></div>
-      <div class="h-body h-jupiter" data-depth="0.26"><canvas data-sphere="jupiter" data-tex="512" data-spin="0.05" data-roll="-4"></canvas></div>
       <div class="asteroid a1"><canvas data-rock="7" width="120" height="120"></canvas></div>
       <div class="asteroid a2"><canvas data-rock="19" width="80" height="80"></canvas></div>
       <div class="ring" data-depth="0.18"></div>
@@ -293,6 +296,22 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
     paint();
   }
 
+  // Background planets: fixed to the window, drifting up at a fraction of the scroll speed
+  // (each its own, for depth), and dimming once the hero is behind you so text stays clear.
+  {
+    const bg = document.querySelector<HTMLElement>('[data-planets]')!;
+    const bodies = [...bg.querySelectorAll<HTMLElement>('[data-speed]')];
+    let ticking = false;
+    const paint = () => {
+      ticking = false;
+      const y = Math.min(scrollY, innerHeight * 2);
+      if (!reduce) bodies.forEach((b) => (b.style.transform = `translate3d(0, ${-y * +b.dataset.speed!}px, 0)`));
+      bg.style.opacity = String(1 - 0.5 * Math.min(1, scrollY / innerHeight));
+    };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(paint); } }, { passive: true });
+    paint();
+  }
+
   // Live IST clock and tonight's moon phase (synodic month from a known new moon).
   const clock = document.querySelector('[data-clock]')!;
   const date = document.querySelector('[data-date]')!;
@@ -389,9 +408,12 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   .scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
   .scene > * { position: absolute; will-change: transform; }
   .h-body canvas, .asteroid canvas { display: block; width: 100%; height: 100%; }
-  .h-moon { width: clamp(90px, 9vw, 130px); aspect-ratio: 1; top: 9%; left: 41%; filter: drop-shadow(0 0 34px rgb(255 241 201 / 0.28)); }
-  .h-saturn { width: clamp(150px, 14vw, 220px); aspect-ratio: 1; top: 11%; right: 0.5%; filter: drop-shadow(0 0 30px rgb(233 214 166 / 0.18)); }
-  .h-jupiter { width: clamp(70px, 6.5vw, 100px); aspect-ratio: 1; top: 66%; left: 2.5%; filter: drop-shadow(0 0 24px rgb(215 167 124 / 0.25)); }
+  /* Background planets live in the window, not the page, so every screen size sees all three. */
+  .planets-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .planets-bg .h-body { position: absolute; aspect-ratio: 1; will-change: transform; }
+  .h-moon { width: clamp(90px, 9vw, 130px); top: max(88px, 10vh); left: 41vw; filter: drop-shadow(0 0 34px rgb(255 241 201 / 0.28)); }
+  .h-saturn { width: clamp(130px, 13vw, 200px); top: max(70px, 8vh); left: 1.5vw; filter: drop-shadow(0 0 30px rgb(233 214 166 / 0.18)); }
+  .h-jupiter { width: clamp(60px, 6vw, 96px); bottom: 12vh; right: 1.5vw; filter: drop-shadow(0 0 24px rgb(215 167 124 / 0.25)); }
   .asteroid { width: 52px; aspect-ratio: 1; top: 0; left: 0; opacity: 0.9; offset-rotate: 0deg; }
   .asteroid canvas { animation: tumble 19s linear infinite; }
   .a1 { animation: drift-a 70s linear infinite; animation-delay: -12s; }
@@ -621,16 +643,15 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
 
   .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 24px; }
 
-  @media (max-width: 1180px) {
-    .h-saturn, .h-jupiter { display: none; }
-  }
   @media (max-width: 1100px) {
     .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'self self' 'now now' 'edu cp' 'orbit orbit' 'rule rule' 'mail mail'; }
     .t-self { min-height: 0; }
   }
   @media (max-width: 960px) {
     .hero-in { grid-template-columns: 1fr; padding-top: 24px; }
-    .h-moon { left: auto; right: 5%; top: 7%; width: 84px; }
+    .h-moon { left: auto; right: 4vw; top: 38vh; width: 84px; }
+    .h-saturn { top: 64px; left: auto; right: 2vw; width: clamp(120px, 20vw, 170px); }
+    .h-jupiter { right: auto; left: 3vw; bottom: 14vh; width: clamp(54px, 9vw, 84px); }
     .caps { grid-template-columns: 1fr; }
     .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: auto; }
     .transits, .ask-card { grid-template-columns: 1fr; gap: 32px; }
@@ -645,7 +666,10 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
     .cap:last-child { grid-column: span 6; }
   }
   @media (max-width: 560px) {
-    .h-moon { top: 330px; right: 16px; width: 72px; }
+    .h-moon { top: 40vh; right: 14px; width: 66px; }
+    .h-saturn { top: auto; bottom: 9vh; right: 8px; width: 104px; }
+    .h-jupiter { bottom: auto; left: auto; top: 13vh; right: 4px; width: 40px; }
+    .planets-bg { opacity: 0.9; }
     .bento { grid-template-columns: 1fr; grid-template-areas: 'self' 'now' 'edu' 'cp' 'orbit' 'rule' 'mail'; }
     .t-orbit { min-height: 0; }
     .planet-l b { font-size: 0.66rem; padding: 3px 7px; }

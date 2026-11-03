@@ -299,6 +299,7 @@ export function mountAll(root = document) {
     if (d.phase) opts.light = phaseLight(+d.phase);
     if (kind === 'moon') { opts.wobble = true; opts.ambient = 0.09; opts.limb = 0.15; }
     if (kind === 'mercury') opts.limb = 0.2;
+    if (kind === 'venus') { opts.ambient = 0.3; opts.limb = 0.15; }
     if (kind === 'sun') opts.emissive = true;
     if (kind === 'saturn') opts.rings = { inner: 1.25, outer: 2.25, tilt: +d.tilt || 0.3 };
     new Sphere(c, opts);

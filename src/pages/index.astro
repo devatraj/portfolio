@@ -66,6 +66,7 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   <div class="planets-bg" aria-hidden="true" data-planets>
     <div class="h-body h-moon" data-speed="0.06"><canvas data-sphere="moon" data-tex="512" data-moon-live></canvas></div>
     <div class="h-body h-saturn" data-speed="0.1"><canvas data-sphere="saturn" data-tex="512" data-spin="0.03" data-roll="-18" data-tilt="0.34"></canvas></div>
+    <div class="h-body h-venus" data-speed="0.08"><canvas data-sphere="venus" data-tex="128" data-spin="0.004"></canvas></div>
     <div class="h-body h-jupiter" data-speed="0.15"><canvas data-sphere="jupiter" data-tex="512" data-spin="0.05" data-roll="-4"></canvas></div>
   </div>
 
@@ -411,9 +412,35 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   /* Background planets live in the window, not the page, so every screen size sees all three. */
   .planets-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
   .planets-bg .h-body { position: absolute; aspect-ratio: 1; will-change: transform; }
-  .h-moon { width: clamp(90px, 9vw, 130px); top: max(88px, 10vh); left: 41vw; filter: drop-shadow(0 0 34px rgb(255 241 201 / 0.28)); }
-  .h-saturn { width: clamp(130px, 13vw, 200px); top: max(70px, 8vh); left: 1.5vw; filter: drop-shadow(0 0 30px rgb(233 214 166 / 0.18)); }
-  .h-jupiter { width: clamp(60px, 6vw, 96px); bottom: 12vh; right: 1.5vw; filter: drop-shadow(0 0 24px rgb(215 167 124 / 0.25)); }
+  .planets-bg { --mw: clamp(100px, 11vw, 150px); }
+  .h-moon { width: var(--mw); top: max(68px, 7vh); left: 40vw; filter: drop-shadow(0 0 34px rgb(255 241 201 / 0.28)); }
+  .h-venus { width: clamp(30px, 2.8vw, 44px); top: calc(max(68px, 7vh) + var(--mw) * 0.62); left: calc(40vw + var(--mw) + 14px); }
+  .h-saturn { width: clamp(180px, 18vw, 280px); top: max(52px, 5vh); left: 0.5vw; filter: drop-shadow(0 0 30px rgb(233 214 166 / 0.2)); }
+  .h-jupiter { width: clamp(90px, 9.5vw, 150px); bottom: 9vh; right: 1.5vw; filter: drop-shadow(0 0 28px rgb(215 167 124 / 0.3)); }
+  /* Venus, the evening star: a bright disc with a breathing halo and soft diffraction spikes. */
+  .h-venus { filter: drop-shadow(0 0 8px #fff4cf) drop-shadow(0 0 22px rgb(255 232 160 / 0.85)); }
+  .h-venus::before, .h-venus::after { content: ''; position: absolute; left: 50%; top: 50%; pointer-events: none; translate: -50% -50%; }
+  .h-venus::before {
+    width: 420%; height: 420%; border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 244 210 / 0.38), rgb(255 220 150 / 0.1) 38%, transparent 66%);
+    animation: venus-breathe 5s ease-in-out infinite;
+  }
+  .h-venus::after {
+    width: 520%; height: 520%;
+    background:
+      linear-gradient(90deg, transparent 0 46%, rgb(255 248 225 / 0.55) 50%, transparent 54% 100%) center / 100% 3% no-repeat,
+      linear-gradient(0deg, transparent 0 46%, rgb(255 248 225 / 0.55) 50%, transparent 54% 100%) center / 3% 100% no-repeat;
+    mask-image: radial-gradient(circle, #000 8%, transparent 62%);
+    animation: venus-breathe 5s ease-in-out infinite reverse;
+  }
+  @keyframes venus-breathe { 50% { opacity: 0.55; scale: 0.9; } }
+  .h-venus canvas { position: relative; z-index: 1; }
+  /* Wide screens have room right of the kundli: the moon and the evening star move there, larger. */
+  @media (min-width: 1500px) {
+    .planets-bg { --mw: clamp(170px, 12vw, 230px); }
+    .h-moon { left: auto; right: 2vw; top: max(90px, 11vh); }
+    .h-venus { left: auto; right: calc(2vw + var(--mw) * 0.35); top: calc(max(90px, 11vh) + var(--mw) + 40px); }
+  }
   .asteroid { width: 52px; aspect-ratio: 1; top: 0; left: 0; opacity: 0.9; offset-rotate: 0deg; }
   .asteroid canvas { animation: tumble 19s linear infinite; }
   .a1 { animation: drift-a 70s linear infinite; animation-delay: -12s; }
@@ -649,9 +676,11 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
   }
   @media (max-width: 960px) {
     .hero-in { grid-template-columns: 1fr; padding-top: 24px; }
-    .h-moon { left: auto; right: 4vw; top: 38vh; width: 84px; }
-    .h-saturn { top: 64px; left: auto; right: 2vw; width: clamp(120px, 20vw, 170px); }
-    .h-jupiter { right: auto; left: 3vw; bottom: 14vh; width: clamp(54px, 9vw, 84px); }
+    .planets-bg { --mw: clamp(84px, 15vw, 120px); }
+    .h-moon { left: auto; right: 4vw; top: 38vh; }
+    .h-venus { left: auto; right: calc(4vw + var(--mw) + 18px); top: calc(38vh + var(--mw) * 0.6); }
+    .h-saturn { top: 58px; left: auto; right: 1vw; width: clamp(150px, 27vw, 230px); }
+    .h-jupiter { right: auto; left: 2vw; bottom: 13vh; width: clamp(70px, 13vw, 116px); }
     .caps { grid-template-columns: 1fr; }
     .cap, .cap:nth-child(1), .cap:nth-child(2) { grid-column: auto; }
     .transits, .ask-card { grid-template-columns: 1fr; gap: 32px; }
@@ -666,9 +695,11 @@ const rule = principles.find((r) => r.title.startsWith('Prove')) ?? principles[0
     .cap:last-child { grid-column: span 6; }
   }
   @media (max-width: 560px) {
-    .h-moon { top: 40vh; right: 14px; width: 66px; }
-    .h-saturn { top: auto; bottom: 9vh; right: 8px; width: 104px; }
-    .h-jupiter { bottom: auto; left: auto; top: 13vh; right: 4px; width: 40px; }
+    .planets-bg { --mw: 84px; }
+    .h-moon { top: 40vh; right: 8px; }
+    .h-venus { right: 10px; left: auto; top: 27vh; width: 24px; }
+    .h-saturn { top: auto; bottom: 8vh; right: 0; width: 140px; }
+    .h-jupiter { bottom: auto; left: auto; top: 12.5vh; right: 2px; width: 50px; }
     .planets-bg { opacity: 0.9; }
     .bento { grid-template-columns: 1fr; grid-template-areas: 'self' 'now' 'edu' 'cp' 'orbit' 'rule' 'mail'; }
     .t-orbit { min-height: 0; }
